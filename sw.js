@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gotfive-v12';
+const CACHE_NAME = 'gotfive-v13';
 const ASSETS = [
   './',
   './index.html',
@@ -18,6 +18,7 @@ const ASSETS = [
   './icons/icon-512-maskable.png',
   './icons/flag-fr.svg',
   './icons/flag-en.svg',
+  './icons/flag-pl.svg',
 ];
 
 self.addEventListener('install', (event) => {

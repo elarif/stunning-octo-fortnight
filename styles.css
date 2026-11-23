@@ -564,6 +564,8 @@ summary:focus-visible {
 .color-name {
   font-size: 0.78rem;
   line-height: 1.1;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .color-count {
@@ -838,7 +840,9 @@ button.tile:hover {
   color: var(--muted);
   font-size: 0.7rem;
   font-weight: 700;
-  white-space: nowrap;
+  line-height: 1.1;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .arrow-note {
@@ -1927,7 +1931,11 @@ button.tile:hover {
   }
 
   .color-name {
-    font-size: 0.7rem;
+    font-size: 0.64rem;
+  }
+
+  .slot-color {
+    font-size: 0.6rem;
   }
 
   .clue-buttons {
@@ -2047,8 +2055,12 @@ button.tile:hover {
   }
 
   .lang-btn {
-    padding: 3px 5px;
+    padding: 4px 6px;
     font-size: 0.64rem;
+  }
+
+  .lang-code {
+    display: none;
   }
 
   .flag-icon {

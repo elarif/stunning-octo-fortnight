@@ -161,6 +161,7 @@ function renderLangSwitcher() {
     { class: 'lang-switch', role: 'group', 'aria-label': t('common.language') },
     option('fr'),
     option('en'),
+    option('pl'),
   );
 }
 
