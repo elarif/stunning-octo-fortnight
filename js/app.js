@@ -1292,14 +1292,14 @@ function renderOwnStand(player) {
         compareMode ? h('span', { class: 'pill', text: t('stand.choose') }) : null,
       ),
     ),
+    h('div', { class: 'own-section' },
+      h('h3', { class: 'subtitle', text: t('stand.sorting') }),
+      renderSortingZone(player, false, clue),
+    ),
     h('div', { class: 'own-stand' }, slots),
     h('div', { class: 'own-section' },
       h('h3', { class: 'subtitle', text: t('stand.comparisons') }),
       renderComparisonRow(player, false, clue),
-    ),
-    h('div', { class: 'own-section' },
-      h('h3', { class: 'subtitle', text: t('stand.sorting') }),
-      renderSortingZone(player, false, clue),
     ),
   );
 }
