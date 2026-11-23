@@ -10,29 +10,12 @@ export const PHASES = Object.freeze({
   GAME_OVER: 'gameOver',
 });
 
-const POSITION_LABELS = Object.freeze([
-  'avant la 1re tuile',
-  'entre la 1re et la 2e tuile',
-  'entre la 2e et la 3e tuile',
-  'entre la 3e et la 4e tuile',
-  'entre la 4e et la 5e tuile',
-  'après la 5e tuile',
-]);
-
-export function ordinal(n) {
-  return n === 1 ? '1re' : `${n}e`;
-}
-
-export function positionLabel(notch) {
-  return POSITION_LABELS[notch] ?? '';
-}
-
 function clone(state) {
   return structuredClone(state);
 }
 
-function addLog(state, text, type = 'info') {
-  state.log.push({ turn: state.turn, text, type });
+function addLog(state, key, params = {}, type = 'info') {
+  state.log.push({ turn: state.turn, key, params, type });
 }
 
 function resetTurnFields(state) {
@@ -179,7 +162,7 @@ export function createGame({ names, kinds, seed = 0, startingPlayer = 0 }) {
     claims: [],
     log: [],
   };
-  addLog(state, `Mise en place terminée. ${players[safeStart].name} commence.`, 'setup');
+  addLog(state, 'setup', { player: players[safeStart].name }, 'setup');
   return state;
 }
 
@@ -197,7 +180,7 @@ export function reveal(state, colorIndex) {
   next.revealed = n;
   next.lastRevealed = n;
   next.phase = PHASES.CHOOSE_TILE;
-  addLog(next, `${currentPlayer(next).name} révèle le ${n}.`, 'reveal');
+  addLog(next, 'reveal', { player: currentPlayer(next).name, tile: n }, 'reveal');
   return next;
 }
 
@@ -210,10 +193,10 @@ export function skipReveal(state) {
   if (next.publicTiles.length === 0) {
     next.phase = PHASES.END;
     next.clue = null;
-    addLog(next, 'La réserve et les tuiles visibles sont épuisées : le tour se termine.', 'info');
+    addLog(next, 'skipNoTiles', {}, 'info');
   } else {
     next.phase = PHASES.CHOOSE_TILE;
-    addLog(next, 'La réserve est vide : on passe directement à l’indice.', 'info');
+    addLog(next, 'skipEmpty', {}, 'info');
   }
   return next;
 }
@@ -242,11 +225,7 @@ export function chooseClue(state, type) {
     next.publicTiles = next.publicTiles.filter((value) => value !== n);
     next.clue = { type: 'sort', tile: n, notch };
     next.phase = PHASES.END;
-    addLog(
-      next,
-      `${player.name} classe le ${n} : il se place ${positionLabel(notch)} du support de ${player.name}.`,
-      'clue',
-    );
+    addLog(next, 'sort', { player: player.name, tile: n, notch }, 'clue');
   } else {
     next.phase = PHASES.COMPARE_SLOT;
   }
@@ -275,14 +254,22 @@ export function chooseCompareSlot(state, slotIndex) {
   const player = currentPlayer(next);
   const n = next.chosenTile;
   const target = player.stand[slotIndex];
-  const same = tile(n).dots === tile(target).dots;
+  const targetTile = tile(target);
+  const same = tile(n).dots === targetTile.dots;
   player.comparisons[slotIndex].push({ n, same });
   next.publicTiles = next.publicTiles.filter((value) => value !== n);
   next.clue = { type: 'compare', tile: n, slot: slotIndex, same };
   next.phase = PHASES.END;
   addLog(
     next,
-    `${player.name} compare le ${n} à sa ${ordinal(slotIndex + 1)} tuile (${COLORS[tile(target).colorIndex].name}) : ${same ? 'Oui' : 'Non'}.`,
+    'compare',
+    {
+      player: player.name,
+      tile: n,
+      slot: slotIndex,
+      colorIndex: targetTile.colorIndex,
+      same,
+    },
     'clue',
   );
   return next;
@@ -322,30 +309,26 @@ export function claim(state, numbers) {
     next.winner = claimant.id;
     next.winReason = 'claim';
     next.phase = PHASES.GAME_OVER;
-    addLog(next, `${claimant.name} annonce GOT FIVE ! et trouve ses 5 numéros. ${claimant.name} gagne !`, 'win');
+    addLog(next, 'claimWin', { player: claimant.name }, 'win');
     return next;
   }
 
   claimant.eliminated = true;
-  addLog(
-    next,
-    `${claimant.name} annonce GOT FIVE ! mais se trompe. ${claimant.name} est éliminé(e).`,
-    'elimination',
-  );
+  addLog(next, 'claimLose', { player: claimant.name }, 'elimination');
 
   const remaining = activePlayers(next);
   if (remaining.length === 1) {
     next.winner = remaining[0].id;
     next.winReason = 'lastActive';
     next.phase = PHASES.GAME_OVER;
-    addLog(next, `${remaining[0].name} est le dernier joueur en lice et gagne.`, 'win');
+    addLog(next, 'lastActive', { player: remaining[0].name }, 'win');
     return next;
   }
   if (remaining.length === 0) {
     next.winner = null;
     next.winReason = 'draw';
     next.phase = PHASES.GAME_OVER;
-    addLog(next, 'Tous les joueurs se sont trompés. Aucun vainqueur.', 'win');
+    addLog(next, 'draw', {}, 'win');
     return next;
   }
 

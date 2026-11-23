@@ -14,6 +14,8 @@ Le plateau et la fiche ne sont plus des onglets séparés : la fiche reste visib
 
 En mode **Solo vs IA**, l'IA joue automatiquement ses tours. C'est un solveur local, sans réseau ni LLM : elle ne voit pas ses propres numéros, entretient des candidats par couleur et annonce seulement quand une solution unique est cohérente avec ses indices. Son écran de tour est public et n'affiche aucun support humain.
 
+L'interface, les règles et le journal sont disponibles en **français et en anglais**. La langue du navigateur est utilisée au premier lancement, puis le choix est mémorisé. Le sélecteur à drapeaux FR/EN reste accessible sur chaque écran.
+
 À la fin de la partie, le bouton **Voir la table finale** révèle tous les supports, les annonces de chaque joueur et le journal complet des actions pour comparer les erreurs.
 
 ## Lancer le jeu
@@ -42,6 +44,7 @@ Les tests couvrent les 60 tuiles, la distribution, les indices, les annonces, le
 - `js/tiles.js` : les 60 tuiles (couleur, numéro, points).
 - `js/engine.js` : moteur de règles pur, testable sans navigateur.
 - `js/bot.js` : solveur de déduction local de l'IA, sans accès à son propre support.
+- `js/i18n.js` : traductions françaises et anglaises, détection de langue et journal localisé.
 - `js/app.js` : écrans, interactions, tours d'IA et sauvegarde.
 - `js/storage.js` : sauvegarde locale versionnée.
 - `sw.js` + `manifest.webmanifest` + `icons/` : fonctionnement hors ligne et installation.

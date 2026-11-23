@@ -2018,3 +2018,76 @@ button.tile:hover {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* Language switch */
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.lang-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  border: 0;
+  border-radius: 999px;
+  color: rgba(255, 250, 242, 0.7);
+  background: transparent;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.lang-btn.is-active {
+  color: var(--ink);
+  background: var(--card);
+}
+
+.lang-code {
+  line-height: 1;
+}
+
+.flag-icon {
+  display: block;
+  width: 17px;
+  height: 11px;
+  border-radius: 2px;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+.home-top,
+.over-top {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.pass-top {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+}
+
+@media (max-width: 480px) {
+  .lang-switch {
+    padding: 2px;
+  }
+
+  .lang-btn {
+    padding: 3px 5px;
+    font-size: 0.64rem;
+  }
+
+  .flag-icon {
+    width: 15px;
+    height: 10px;
+  }
+}

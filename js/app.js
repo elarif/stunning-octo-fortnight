@@ -11,13 +11,21 @@ import {
   currentPlayer,
   endTurn,
   isValidClaimNumbers,
-  ordinal,
-  positionLabel,
   reveal,
   skipReveal,
   visibleNumbersFor,
 } from './engine.js';
 import { buildBotView, chooseBotAction } from './bot.js';
+import {
+  colorName,
+  formatLog,
+  getLanguage,
+  initLanguage,
+  ordinal,
+  positionLabel,
+  setLanguage,
+  t,
+} from './i18n.js';
 import { randomSeed } from './rng.js';
 import { clearSave, loadGame, readSaveMeta, saveGame } from './storage.js';
 
@@ -37,18 +45,6 @@ const app = {
   botPlayerId: null,
   botTimer: null,
   botMessage: null,
-};
-
-const TITLES = {
-  home: 'Got Five ! — version locale',
-  setup: 'Nouvelle partie — Got Five !',
-  pass: 'Passage — Got Five !',
-  notes: 'Mes notes — Got Five !',
-  turn: 'Tour — Got Five !',
-  bot: 'Tour de l’IA — Got Five !',
-  gameover: 'Partie terminée — Got Five !',
-  review: 'Table finale — Got Five !',
-  rules: 'Règles — Got Five !',
 };
 
 function appendChildren(node, children) {
@@ -92,23 +88,28 @@ function dotsEl(count) {
 
 function tileEl(n, options = {}) {
   const { size = 'md', onclick = null, selected = false, highlight = false, tilt = false, badge = null, disabled = false } = options;
-  const t = tile(n);
-  const classes = ['tile', `tile--${t.color.id}`, `tile--${size}`];
+  const data = tile(n);
+  const classes = ['tile', `tile--${data.color.id}`, `tile--${size}`];
   if (selected) classes.push('is-selected');
   if (highlight) classes.push('is-highlight');
   if (tilt) classes.push('is-tilted');
 
   const content = [
-    h('span', { class: 'tile-glyph', 'aria-hidden': 'true', text: t.color.symbol }),
-    h('span', { class: 'tile-num', text: String(t.n) }),
-    dotsEl(t.dots),
+    h('span', { class: 'tile-glyph', 'aria-hidden': 'true', text: data.color.symbol }),
+    h('span', { class: 'tile-num', text: String(data.n) }),
+    dotsEl(data.dots),
   ];
   if (badge) content.push(h('span', { class: 'tile-badge', text: badge }));
 
   const attrs = {
     class: classes.join(' '),
-    style: { '--tile-bg': t.color.hex, '--tile-ink': t.color.ink },
-    'aria-label': `Tuile ${t.n}, ${t.color.name}, ${t.dots} point${t.dots > 1 ? 's' : ''}`,
+    style: { '--tile-bg': data.color.hex, '--tile-ink': data.color.ink },
+    'aria-label': t('common.tileAria', {
+      n: data.n,
+      color: colorName(data.color),
+      dots: data.dots,
+      s: data.dots > 1 ? 's' : '',
+    }),
   };
   if (onclick && !disabled) {
     return h('button', { ...attrs, type: 'button', onclick }, ...content);
@@ -129,11 +130,44 @@ function backTile(tileData) {
   );
 }
 
+function renderLangSwitcher() {
+  const language = getLanguage();
+  const option = (code) =>
+    h(
+      'button',
+      {
+        class: `lang-btn${language === code ? ' is-active' : ''}`,
+        type: 'button',
+        'aria-pressed': String(language === code),
+        'aria-label': `${t('common.language')} : ${t(`language.${code}`)}`,
+        title: t(`language.${code}`),
+        onclick: () => {
+          if (getLanguage() === code) return;
+          setLanguage(code);
+          render();
+        },
+      },
+      h('img', {
+        class: 'flag-icon',
+        src: `./icons/flag-${code}.svg`,
+        alt: '',
+        'aria-hidden': 'true',
+      }),
+      h('span', { class: 'lang-code', text: code.toUpperCase() }),
+    );
+  return h(
+    'div',
+    { class: 'lang-switch', role: 'group', 'aria-label': t('common.language') },
+    option('fr'),
+    option('en'),
+  );
+}
+
 function topBar(title, onBack, extra = null) {
   return h(
     'header',
     { class: 'topbar' },
-    h('button', { class: 'btn btn--icon', type: 'button', onclick: onBack, 'aria-label': 'Retour' }, '←'),
+    h('button', { class: 'btn btn--icon', type: 'button', onclick: onBack, 'aria-label': t('common.back') }, '←'),
     h('h1', { class: 'topbar-title', text: title }),
     extra ?? h('span', { class: 'topbar-spacer' }),
   );
@@ -157,18 +191,16 @@ function humanCount(game) {
 }
 
 function botActionMessage(action) {
-  if (action.type === 'reveal') return 'L’IA révèle une tuile.';
-  if (action.type === 'skipReveal') return 'L’IA passe la révélation.';
-  if (action.type === 'chooseTile') return `L’IA choisit le ${action.tile}.`;
+  if (action.type === 'reveal') return t('bot.reveal');
+  if (action.type === 'skipReveal') return t('bot.skip');
+  if (action.type === 'chooseTile') return t('bot.chooseTile', { tile: action.tile });
   if (action.type === 'chooseClue') {
-    return action.clue === 'sort'
-      ? 'L’IA demande un classement.'
-      : 'L’IA demande une comparaison.';
+    return action.clue === 'sort' ? t('bot.sort') : t('bot.compare');
   }
-  if (action.type === 'compareSlot') return 'L’IA compare les points.';
-  if (action.type === 'endTurn') return 'L’IA termine son tour.';
-  if (action.type === 'claim') return 'L’IA annonce GOT FIVE !';
-  return 'L’IA réfléchit…';
+  if (action.type === 'compareSlot') return t('bot.comparePoints');
+  if (action.type === 'endTurn') return t('bot.end');
+  if (action.type === 'claim') return t('bot.claim');
+  return t('bot.thinking');
 }
 
 function applyBotAction(game, action) {
@@ -200,7 +232,7 @@ function runBotStep() {
   try {
     action = chooseBotAction(buildBotView(app.game, player.id));
   } catch (error) {
-    app.botMessage = `Erreur IA : ${error.message}`;
+    app.botMessage = t('bot.error', { message: error.message });
     render();
     return;
   }
@@ -228,7 +260,7 @@ function runBotStep() {
       app.botTimer = setTimeout(enterCurrentTurn, 700);
     }
   } catch (error) {
-    app.botMessage = `Erreur IA : ${error.message}`;
+    app.botMessage = t('bot.error', { message: error.message });
     render();
   }
 }
@@ -264,7 +296,7 @@ function enterCurrentTurn() {
   const player = currentPlayer(app.game);
   if (player.kind === 'bot') {
     app.botPlayerId = player.id;
-    app.botMessage = 'L’IA réfléchit…';
+    app.botMessage = t('bot.thinking');
     app.screen = 'bot';
     app.privacy = true;
     render();
@@ -324,7 +356,7 @@ function continueGame() {
   if (!game) {
     app.saved = null;
     app.screen = 'home';
-    app.notice = 'Sauvegarde illisible. Lance une nouvelle partie.';
+    app.notice = t('home.corrupted');
     render();
     return;
   }
@@ -342,8 +374,13 @@ function startGame() {
   const solo = app.setup.mode === 'solo';
   const count = solo ? 2 : app.setup.count;
   const names = solo
-    ? [app.setup.names[0] || 'Joueur 1', 'IA 1']
-    : app.setup.names.slice(0, count);
+    ? [
+        app.setup.names[0]?.trim() || t('setup.player', { n: 1 }),
+        t('setup.botName'),
+      ]
+    : app.setup.names
+        .slice(0, count)
+        .map((name, index) => name?.trim() || t('setup.player', { n: index + 1 }));
   const kinds = solo ? ['human', 'bot'] : names.map(() => 'human');
   const game = createGame({
     names,
@@ -501,40 +538,37 @@ function renderHome() {
   return h(
     'main',
     { class: 'screen screen--home' },
+    h('div', { class: 'home-top' }, renderLangSwitcher()),
     h(
       'div',
       { class: 'home-hero' },
-      h('p', { class: 'eyebrow', text: 'Jeu de déduction — version locale' }),
+      h('p', { class: 'eyebrow', text: t('home.eyebrow') }),
       h('h1', { class: 'wordmark' }, 'GOT ', h('span', { class: 'wordmark-accent' }, 'FIVE'), ' !'),
-      h('p', { class: 'tagline', text: 'Solo vs IA · 2 à 4 joueurs · hors ligne' }),
+      h('p', { class: 'tagline', text: t('home.tagline') }),
     ),
     h(
       'div',
       { class: 'home-actions' },
-      h('button', { class: 'btn btn--primary btn--wide', type: 'button', onclick: requestNewGame }, 'Nouvelle partie'),
+      h('button', { class: 'btn btn--primary btn--wide', type: 'button', onclick: requestNewGame }, t('home.newGame')),
       app.saved
         ? h(
             'button',
             { class: 'btn btn--secondary btn--wide', type: 'button', onclick: continueGame },
-            app.saved.phase === PHASES.GAME_OVER ? 'Voir la dernière partie' : 'Continuer la partie',
+            app.saved.phase === PHASES.GAME_OVER ? t('home.lastGame') : t('home.continue'),
           )
         : null,
-      h('button', { class: 'btn btn--ghost btn--wide', type: 'button', onclick: openRules }, 'Règles'),
+      h('button', { class: 'btn btn--ghost btn--wide', type: 'button', onclick: openRules }, t('home.rules')),
     ),
     app.notice ? h('p', { class: 'notice', text: app.notice }) : null,
-    h(
-      'p',
-      { class: 'fineprint' },
-      'Version non officielle, à usage personnel. Inspirée du jeu Got Five ! de Blue Orange.',
-    ),
+    h('p', { class: 'fineprint' }, t('home.fineprint')),
   );
 }
 
 function renderSetup() {
   const solo = app.setup.mode === 'solo';
   const modeButtons = [
-    ['local', 'Local'],
-    ['solo', 'Solo vs IA'],
+    ['local', t('setup.modeLocal')],
+    ['solo', t('setup.modeSolo')],
   ].map(([mode, label]) =>
     h(
       'button',
@@ -580,19 +614,19 @@ function renderSetup() {
         h(
           'label',
           { class: 'field' },
-          h('span', { class: 'field-label', text: 'Toi' }),
+          h('span', { class: 'field-label', text: t('setup.you') }),
           h('input', {
             class: 'text-input',
             type: 'text',
             maxlength: '20',
             autocomplete: 'off',
-            placeholder: 'Ton nom',
+            placeholder: t('setup.yourName'),
             value: app.setup.names[0] ?? '',
             oninput: (event) => {
               app.setup.names[0] = event.target.value;
               const option = document.querySelector('#start-player option[value="0"]');
               if (option) {
-                option.textContent = event.target.value.trim() || 'Toi';
+                option.textContent = event.target.value.trim() || t('setup.you');
               }
             },
           }),
@@ -600,12 +634,12 @@ function renderSetup() {
         h(
           'div',
           { class: 'field' },
-          h('span', { class: 'field-label', text: 'Adversaire' }),
+          h('span', { class: 'field-label', text: t('setup.opponent') }),
           h(
             'div',
             { class: 'bot-player-row' },
-            h('strong', { text: 'IA 1' }),
-            h('span', { class: 'muted small', text: 'Joue automatiquement' }),
+            h('strong', { text: t('setup.botName') }),
+            h('span', { class: 'muted small', text: t('setup.botHint') }),
           ),
         ),
       ]
@@ -613,19 +647,19 @@ function renderSetup() {
         h(
           'label',
           { class: 'field' },
-          h('span', { class: 'field-label', text: `Joueur ${index + 1}` }),
+          h('span', { class: 'field-label', text: t('setup.player', { n: index + 1 }) }),
           h('input', {
             class: 'text-input',
             type: 'text',
             maxlength: '20',
             autocomplete: 'off',
-            placeholder: `Joueur ${index + 1}`,
+            placeholder: t('setup.player', { n: index + 1 }),
             value: app.setup.names[index] ?? '',
             oninput: (event) => {
               app.setup.names[index] = event.target.value;
               const option = document.querySelector(`#start-player option[value="${index}"]`);
               if (option) {
-                option.textContent = event.target.value.trim() || `Joueur ${index + 1}`;
+                option.textContent = event.target.value.trim() || t('setup.player', { n: index + 1 });
               }
             },
           }),
@@ -638,30 +672,30 @@ function renderSetup() {
       { value: String(index), selected: app.setup.starting === index },
       solo
         ? index === 0
-          ? app.setup.names[0]?.trim() || 'Toi'
-          : 'IA 1'
-        : app.setup.names[index]?.trim() || `Joueur ${index + 1}`,
+          ? app.setup.names[0]?.trim() || t('setup.you')
+          : t('setup.botName')
+        : app.setup.names[index]?.trim() || t('setup.player', { n: index + 1 }),
     ),
   );
 
   return h(
     'main',
     { class: 'screen screen--setup' },
-    topBar('Nouvelle partie', goHome),
+    topBar(t('setup.title'), goHome, renderLangSwitcher()),
     h(
       'section',
       { class: 'card setup-card' },
-      h('h2', { text: 'Qui joue ?' }),
-      h('p', { class: 'muted', text: solo ? 'Toi contre une IA locale.' : 'Choisis le nombre de joueurs, puis leurs noms.' }),
-      h('div', { class: 'segments', role: 'group', 'aria-label': 'Mode de partie' }, modeButtons),
+      h('h2', { text: t('setup.who') }),
+      h('p', { class: 'muted', text: solo ? t('setup.soloIntro') : t('setup.localIntro') }),
+      h('div', { class: 'segments', role: 'group', 'aria-label': t('setup.modeLabel') }, modeButtons),
       solo
-        ? h('p', { class: 'phase-note', text: '2 joueurs : toi et l’IA. L’IA joue automatiquement, sans écran de passage.' })
-        : h('div', { class: 'segments', role: 'group', 'aria-label': 'Nombre de joueurs' }, countButtons),
+        ? h('p', { class: 'phase-note', text: t('setup.soloNote') })
+        : h('div', { class: 'segments', role: 'group', 'aria-label': t('setup.countLabel') }, countButtons),
       h('div', { class: 'player-fields' }, nameFields),
       h(
         'label',
         { class: 'field' },
-        h('span', { class: 'field-label', text: solo ? 'Qui commence ?' : 'Premier joueur (le plus jeune)' }),
+        h('span', { class: 'field-label', text: solo ? t('setup.firstSolo') : t('setup.firstLocal') }),
         h(
           'select',
           {
@@ -674,13 +708,11 @@ function renderSetup() {
           startOptions,
         ),
       ),
-      h('button', { class: 'btn btn--primary btn--wide', type: 'button', onclick: startGame }, 'Commencer la partie'),
+      h('button', { class: 'btn btn--primary btn--wide', type: 'button', onclick: startGame }, t('setup.start')),
       h(
         'p',
         { class: 'fineprint' },
-        solo
-          ? 'L’IA déduit à partir des informations publiques. Son écran de tour ne montre jamais ton support. Annonce GOT FIVE ! uniquement pendant ton tour.'
-          : 'Sur un seul appareil, les joueurs se passent l’écran. L’annonce GOT FIVE ! se fait uniquement pendant ton tour.',
+        solo ? t('setup.noteSolo') : t('setup.noteLocal'),
       ),
     ),
   );
@@ -700,19 +732,16 @@ function renderPass() {
     h(
       'div',
       { class: 'pass-card' },
-      h('p', { class: 'eyebrow', text: `Tour ${game.turn}` }),
-      h('h1', { class: 'pass-title', text: 'Passe l’appareil à' }),
+      h('div', { class: 'pass-top' }, renderLangSwitcher()),
+      h('p', { class: 'eyebrow', text: t('pass.turn', { n: game.turn }) }),
+      h('h1', { class: 'pass-title', text: t('pass.title') }),
       h('div', { class: 'pass-name', text: player.name }),
-      h(
-        'p',
-        { class: 'pass-warning' },
-        'Les autres joueurs détournent le regard. Cet écran ne doit être vu que par ce joueur.',
-      ),
+      h('p', { class: 'pass-warning' }, t('pass.warning')),
       app.notice ? h('p', { class: 'notice', text: app.notice }) : null,
       h(
         'button',
         { class: 'btn btn--primary btn--wide', type: 'button', onclick: startTurn },
-        `Je suis ${player.name} — afficher mon tour`,
+        t('pass.start', { name: player.name }),
       ),
       h(
         'button',
@@ -724,11 +753,11 @@ function renderPass() {
             render();
           },
         },
-        'Consulter mes notes',
+        t('pass.notes'),
       ),
-      h('button', { class: 'btn btn--ghost btn--wide', type: 'button', onclick: openRules }, 'Règles'),
+      h('button', { class: 'btn btn--ghost btn--wide', type: 'button', onclick: openRules }, t('pass.rules')),
     ),
-    h('p', { class: 'fineprint', text: 'Annonce GOT FIVE ! uniquement pendant ton tour.' }),
+    h('p', { class: 'fineprint', text: t('pass.fineprint') }),
   );
 }
 
@@ -739,16 +768,12 @@ function renderNotes() {
   return h(
     'main',
     { class: 'screen screen--notes' },
-    topBar('Mes notes', () => {
+    topBar(t('notes.title'), () => {
       app.screen = 'pass';
       render();
-    }),
+    }, renderLangSwitcher()),
     renderSheet(player),
-    h(
-      'p',
-      { class: 'fineprint' },
-      'Les autres joueurs détournent le regard. L’annonce GOT FIVE ! se fait uniquement pendant ton tour.',
-    ),
+    h('p', { class: 'fineprint' }, t('notes.fineprint')),
   );
 }
 
@@ -777,15 +802,16 @@ function renderBotTurn() {
       { class: 'turn-header' },
       h('div', { class: 'turn-header-main' },
         h('div', { class: 'turn-title' },
-          h('span', { class: 'eyebrow', text: `Tour ${game.turn}` }),
+          h('span', { class: 'eyebrow', text: t('turn.turn', { n: game.turn }) }),
           h('h1', { class: 'turn-player', text: bot.name }),
         ),
         h('div', { class: 'turn-meta' },
-          h('span', { class: 'pill', text: 'IA' }),
-          h('span', { class: 'pill', text: `Réserve : ${game.supply.length}` }),
+          h('span', { class: 'pill', text: t('bot.badge') }),
+          h('span', { class: 'pill', text: t('turn.reserve', { n: game.supply.length }) }),
+          renderLangSwitcher(),
         ),
       ),
-      h('p', { class: 'bot-status' }, h('span', { class: 'bot-pulse', 'aria-hidden': 'true' }), app.botMessage ?? 'L’IA réfléchit…'),
+      h('p', { class: 'bot-status' }, h('span', { class: 'bot-pulse', 'aria-hidden': 'true' }), app.botMessage ?? t('bot.thinking')),
       app.notice ? h('p', { class: 'notice', text: app.notice }) : null,
     ),
     h(
@@ -795,18 +821,18 @@ function renderBotTurn() {
         'section',
         { class: 'card' },
         h('div', { class: 'section-head' },
-          h('h2', { text: 'Support de l’IA' }),
-          h('span', { class: 'pill', text: 'Visible par tous' }),
+          h('h2', { text: t('bot.support') }),
+          h('span', { class: 'pill', text: t('bot.visible') }),
         ),
-        h('p', { class: 'muted small', text: 'Son écran de tour ne montre jamais les supports humains.' }),
+        h('p', { class: 'muted small', text: t('bot.note') }),
         h('div', { class: 'tile-row' }, bot.stand.map((n) => tileEl(n, { size: 'md' }))),
       ),
       h(
         'section',
         { class: 'card' },
         h('div', { class: 'section-head' },
-          h('h2', { text: 'Tuiles visibles' }),
-          h('span', { class: 'pill', text: `${game.publicTiles.length} tuile${game.publicTiles.length > 1 ? 's' : ''}` }),
+          h('h2', { text: t('bot.visibleTiles') }),
+          h('span', { class: 'pill', text: t('table.count', { count: game.publicTiles.length, s: game.publicTiles.length > 1 ? 's' : '' }) }),
         ),
         h('div', { class: 'tile-row' }, game.publicTiles.map((n) => tileEl(n, { size: 'md' }))),
       ),
@@ -814,35 +840,35 @@ function renderBotTurn() {
         'section',
         { class: 'card' },
         h('div', { class: 'section-head' },
-          h('h2', { text: 'Indices posés par l’IA' }),
+          h('h2', { text: t('bot.clues') }),
           h('span', { class: 'pill', text: `${clueCount}` }),
         ),
         clueCount
           ? h('div', {},
-              h('p', { class: 'mini-label', text: 'Zone de classement' }),
+              h('p', { class: 'mini-label', text: t('table.sorting') }),
               renderSortingZone(bot, false, game.clue),
-              h('p', { class: 'mini-label', text: 'Comparaisons' }),
+              h('p', { class: 'mini-label', text: t('table.comparisons') }),
               renderComparisonRow(bot, false, game.clue),
             )
-          : h('p', { class: 'muted small', text: 'Aucun indice posé.' }),
+          : h('p', { class: 'muted small', text: t('bot.noClues') }),
       ),
       h(
         'section',
         { class: 'card bot-log-card' },
-        h('div', { class: 'section-head' }, h('h2', { text: 'Derniers événements' })),
+        h('div', { class: 'section-head' }, h('h2', { text: t('bot.recent') })),
         entries.length
           ? h('ol', { class: 'log-list' },
               entries.map((entry) =>
                 h('li', { class: `log-entry log-entry--${entry.type}` },
-                  h('span', { class: 'log-turn', text: `Tour ${entry.turn}` }),
-                  h('span', { text: entry.text }),
+                  h('span', { class: 'log-turn', text: t('turn.turn', { n: entry.turn }) }),
+                  h('span', { text: formatLog(entry) }),
                 ),
               ),
             )
-          : h('p', { class: 'muted small', text: 'Aucun événement.' }),
+          : h('p', { class: 'muted small', text: t('bot.noEvents') }),
       ),
     ),
-    h('p', { class: 'fineprint' }, 'Écran public du tour de l’IA. Aucun support humain n’est affiché.'),
+    h('p', { class: 'fineprint' }, t('bot.fineprint')),
   );
 }
 
@@ -852,19 +878,23 @@ function getFicheFocus(game, player) {
   if (clue.type === 'sort') {
     return {
       colorIndex: null,
-      label: 'Classé',
+      label: t('sheet.focusSorted'),
       tone: 'sort',
-      text: `Le ${clue.tile} se place ${positionLabel(clue.notch)} de ton support.`,
+      text: t('clue.sortedText', {
+        tile: clue.tile,
+        position: positionLabel(clue.notch),
+      }),
     };
   }
   const target = tile(player.stand[clue.slot]);
   return {
     colorIndex: target.colorIndex,
-    label: clue.same ? 'OUI' : 'NON',
+    label: clue.same ? t('common.yes') : t('common.no'),
     tone: clue.same ? 'yes' : 'no',
-    text: clue.same
-      ? `Le ${clue.tile} a le même nombre de points que ta ${ordinal(clue.slot + 1)} tuile.`
-      : `Le ${clue.tile} n’a pas le même nombre de points que ta ${ordinal(clue.slot + 1)} tuile.`,
+    text: t(clue.same ? 'sheet.focusSame' : 'sheet.focusDifferent', {
+      tile: clue.tile,
+      ordinal: ordinal(clue.slot + 1),
+    }),
   };
 }
 
@@ -883,13 +913,14 @@ function renderTurn() {
     { class: 'turn-header' },
     h('div', { class: 'turn-header-main' },
       h('div', { class: 'turn-title' },
-        h('span', { class: 'eyebrow', text: `Tour ${game.turn}` }),
+        h('span', { class: 'eyebrow', text: t('turn.turn', { n: game.turn }) }),
         h('h1', { class: 'turn-player', text: player.name }),
       ),
       h('div', { class: 'turn-meta' },
-        h('span', { class: 'pill', text: `Réserve : ${game.supply.length}` }),
-        h('button', { class: 'btn btn--claim', type: 'button', onclick: openClaim }, 'GOT FIVE !'),
-        h('button', { class: 'btn btn--icon', type: 'button', onclick: openRules, 'aria-label': 'Règles' }, '?'),
+        h('span', { class: 'pill', text: t('turn.reserve', { n: game.supply.length }) }),
+        h('button', { class: 'btn btn--claim', type: 'button', onclick: openClaim }, t('common.gotFive')),
+        renderLangSwitcher(),
+        h('button', { class: 'btn btn--icon', type: 'button', onclick: openRules, 'aria-label': t('turn.rules') }, '?'),
       ),
     ),
     app.notice ? h('p', { class: 'notice', text: app.notice }) : null,
@@ -911,11 +942,7 @@ function renderTurn() {
       ),
       h('aside', { class: 'fiche-sidebar' }, renderSheet(player, { focus })),
     ),
-    h(
-      'p',
-      { class: 'fineprint' },
-      'Version non officielle, à usage personnel. Les numéros de ton support restent cachés jusqu’à la fin.',
-    ),
+    h('p', { class: 'fineprint' }, t('turn.fineprint')),
   );
 }
 
@@ -927,16 +954,16 @@ function renderActionDock(player) {
   let content = [];
 
   if (phase === PHASES.REVEAL) {
-    prompt = 'Révéler une tuile';
+    prompt = t('dock.reveal');
     if (game.supply.length === 0) {
       content = [
-        h('p', { class: 'dock-hint', text: 'La réserve est vide. Passe directement à l’indice.' }),
-        h('button', { class: 'btn btn--primary', type: 'button', onclick: doSkipReveal }, 'Continuer sans révéler'),
+        h('p', { class: 'dock-hint', text: t('dock.emptySupply') }),
+        h('button', { class: 'btn btn--primary', type: 'button', onclick: doSkipReveal }, t('dock.skip')),
       ];
     } else {
       const available = canRevealColors(game);
       content = [
-        h('p', { class: 'dock-hint', text: 'Choisis une couleur. La tuile piochée sera révélée à tout le monde.' }),
+        h('p', { class: 'dock-hint', text: t('dock.revealHint') }),
         h(
           'div',
           { class: 'color-grid dock-colors' },
@@ -951,8 +978,8 @@ function renderActionDock(player) {
                 onclick: () => doReveal(index),
               },
               h('span', { class: 'color-symbol', text: color.symbol }),
-              h('span', { class: 'color-name', text: color.name }),
-              h('span', { class: 'color-hint', text: available[index] ? 'Révéler' : 'Épuisée' }),
+              h('span', { class: 'color-name', text: colorName(color) }),
+              h('span', { class: 'color-hint', text: available[index] ? t('common.reveal') : t('common.exhausted') }),
             ),
           ),
         ),
@@ -960,12 +987,12 @@ function renderActionDock(player) {
     }
   } else if (phase === PHASES.CHOOSE_TILE) {
     if (selected === null) {
-      prompt = 'Choisis une tuile visible';
+      prompt = t('dock.chooseTile');
       content = [
-        h('p', { class: 'dock-hint', text: 'Touche une tuile du plateau. Les actions apparaîtront ici.' }),
+        h('p', { class: 'dock-hint', text: t('dock.chooseTileHint') }),
       ];
     } else {
-      prompt = 'Que faire de cette tuile ?';
+      prompt = t('dock.what');
       content = [
         h(
           'div',
@@ -977,22 +1004,22 @@ function renderActionDock(player) {
             h(
               'button',
               { class: 'btn btn--choice', type: 'button', onclick: () => doChooseClue('sort') },
-              h('strong', { text: 'Classer' }),
-              h('span', { text: 'Placer dans ton ordre croissant.' }),
+              h('strong', { text: t('dock.sort') }),
+              h('span', { text: t('dock.sortHint') }),
             ),
             h(
               'button',
               { class: 'btn btn--choice', type: 'button', onclick: () => doChooseClue('compare') },
-              h('strong', { text: 'Comparer' }),
-              h('span', { text: 'Comparer ses points à une de tes tuiles.' }),
+              h('strong', { text: t('dock.compare') }),
+              h('span', { text: t('dock.compareHint') }),
             ),
           ),
-          h('button', { class: 'btn btn--ghost dock-change', type: 'button', onclick: clearSelectedTile }, 'Changer'),
+          h('button', { class: 'btn btn--ghost dock-change', type: 'button', onclick: clearSelectedTile }, t('dock.change')),
         ),
       ];
     }
   } else if (phase === PHASES.CHOOSE_CLUE) {
-    prompt = 'Choisis un indice';
+    prompt = t('dock.chooseClue');
     content = [
       h(
         'div',
@@ -1004,55 +1031,55 @@ function renderActionDock(player) {
           h(
             'button',
             { class: 'btn btn--choice', type: 'button', onclick: () => doChooseClue('sort') },
-            h('strong', { text: 'Classer' }),
-            h('span', { text: 'Placer dans ton ordre croissant.' }),
+            h('strong', { text: t('dock.sort') }),
+            h('span', { text: t('dock.sortHint') }),
           ),
           h(
             'button',
             { class: 'btn btn--choice', type: 'button', onclick: () => doChooseClue('compare') },
-            h('strong', { text: 'Comparer' }),
-            h('span', { text: 'Comparer ses points à une de tes tuiles.' }),
+            h('strong', { text: t('dock.compare') }),
+            h('span', { text: t('dock.compareHint') }),
           ),
         ),
-        h('button', { class: 'btn btn--ghost dock-change', type: 'button', onclick: doCancelClue }, 'Changer'),
+        h('button', { class: 'btn btn--ghost dock-change', type: 'button', onclick: doCancelClue }, t('dock.change')),
       ),
     ];
   } else if (phase === PHASES.COMPARE_SLOT) {
-    prompt = 'Choisis ta tuile à comparer';
+    prompt = t('dock.chooseCompare');
     content = [
       h(
         'div',
         { class: 'dock-choice-row' },
         tileEl(game.chosenTile, { size: 'sm' }),
-        h('span', { class: 'dock-hint dock-inline-hint', text: 'Touche une tuile de ton support.' }),
-        h('button', { class: 'btn btn--ghost dock-change', type: 'button', onclick: doCancelClue }, 'Changer'),
+        h('span', { class: 'dock-hint dock-inline-hint', text: t('dock.compareTouch') }),
+        h('button', { class: 'btn btn--ghost dock-change', type: 'button', onclick: doCancelClue }, t('dock.change')),
       ),
     ];
   } else if (phase === PHASES.END) {
-    prompt = 'Indice obtenu';
+    prompt = t('dock.result');
     content = [
       h('div', { class: 'clue-result dock-result' }, renderClueResult()),
       h(
         'div',
         { class: 'dock-actions dock-actions--end' },
-        h('button', { class: 'btn btn--primary', type: 'button', onclick: doEndTurn }, 'Fin du tour'),
+        h('button', { class: 'btn btn--primary', type: 'button', onclick: doEndTurn }, t('dock.finish')),
       ),
     ];
   }
 
   return h(
     'section',
-    { class: 'action-dock', 'aria-label': 'Actions du tour' },
+    { class: 'action-dock', 'aria-label': t('dock.aria') },
     h(
       'div',
       { class: 'dock-head' },
       h(
         'div',
         { class: 'dock-title' },
-        h('span', { class: 'dock-kicker', text: `À toi de jouer · ${player.name}` }),
+        h('span', { class: 'dock-kicker', text: t('dock.kicker', { name: player.name }) }),
         h('strong', { text: prompt }),
       ),
-      h('button', { class: 'btn btn--ghost dock-fiche', type: 'button', onclick: openFiche }, 'Ma fiche'),
+      h('button', { class: 'btn btn--ghost dock-fiche', type: 'button', onclick: openFiche }, t('dock.fiche')),
     ),
     ...content,
   );
@@ -1061,13 +1088,13 @@ function renderActionDock(player) {
 function renderClueResult() {
   const game = app.game;
   const clue = game.clue;
-  if (!clue) return h('p', { class: 'muted', text: 'Aucun indice possible : termine ton tour.' });
+  if (!clue) return h('p', { class: 'muted', text: t('dock.noClue') });
   if (clue.type === 'sort') {
     return h(
       'div',
       { class: 'result-line' },
-      h('span', { class: 'result-badge', text: 'Classé' }),
-      h('p', {}, `Le ${clue.tile} se place `, h('strong', { text: positionLabel(clue.notch) }), ' de ton support.'),
+      h('span', { class: 'result-badge', text: t('clue.sorted') }),
+      h('p', {}, t('clue.sortedText', { tile: clue.tile, position: positionLabel(clue.notch) })),
     );
   }
   const player = currentPlayer(game);
@@ -1075,13 +1102,15 @@ function renderClueResult() {
   return h(
     'div',
     { class: 'result-line' },
-    h('span', { class: `result-badge ${clue.same ? 'result-badge--yes' : 'result-badge--no'}`, text: clue.same ? 'OUI' : 'NON' }),
+    h('span', { class: `result-badge ${clue.same ? 'result-badge--yes' : 'result-badge--no'}`, text: clue.same ? t('common.yes') : t('common.no') }),
     h(
       'p',
       {},
-      clue.same
-        ? `Le ${clue.tile} a le même nombre de points que ta ${ordinal(clue.slot + 1)} tuile (${targetColor.name}).`
-        : `Le ${clue.tile} n’a pas le même nombre de points que ta ${ordinal(clue.slot + 1)} tuile (${targetColor.name}).`,
+      t(clue.same ? 'clue.same' : 'clue.different', {
+        tile: clue.tile,
+        ordinal: ordinal(clue.slot + 1),
+        color: colorName(targetColor),
+      }),
     ),
   );
 }
@@ -1093,18 +1122,18 @@ function renderPublicTable(player) {
     'section',
     { class: 'card public-table' },
     h('div', { class: 'section-head' },
-      h('h2', { text: 'Table publique' }),
-      h('span', { class: 'pill', text: 'Visible par tous' }),
+      h('h2', { text: t('table.title') }),
+      h('span', { class: 'pill', text: t('table.visible') }),
     ),
     renderVisibleTiles(),
     h(
       'div',
       { class: 'public-block public-block--opponents' },
       h('div', { class: 'public-block-head' },
-        h('h3', { text: 'Adversaires' }),
+        h('h3', { text: t('table.opponents') }),
         h('span', { class: 'pill', text: `${opponents.length}` }),
       ),
-      h('p', { class: 'muted small', text: 'Tu vois leurs numéros. Ne les prononce pas à voix haute.' }),
+      h('p', { class: 'muted small', text: t('table.opponentsNote') }),
       h(
         'div',
         { class: 'opponent-list' },
@@ -1124,10 +1153,10 @@ function renderVisibleTiles() {
     'div',
     { class: 'public-block public-block--visible' },
     h('div', { class: 'public-block-head' },
-      h('h3', { text: 'Tuiles visibles' }),
-      h('span', { class: 'pill', text: `${tiles.length} tuile${tiles.length > 1 ? 's' : ''}` }),
+      h('h3', { text: t('table.visibleTiles') }),
+      h('span', { class: 'pill', text: t('table.count', { count: tiles.length, s: tiles.length > 1 ? 's' : '' }) }),
     ),
-    h('p', { class: 'muted small', text: canPick ? 'Touche une tuile pour la sélectionner.' : 'Elles restent visibles jusqu’à la fin de la partie.' }),
+    h('p', { class: 'muted small', text: canPick ? t('table.selectHint') : t('table.remainHint') }),
     tiles.length
       ? h(
           'div',
@@ -1141,12 +1170,14 @@ function renderVisibleTiles() {
             }),
           ),
         )
-      : h('p', { class: 'muted', text: 'Aucune tuile visible.' }),
+      : h('p', { class: 'muted', text: t('table.noTiles') }),
   );
 }
 
 function notchLabel(notch) {
-  return ['avant', '1–2', '2–3', '3–4', '4–5', 'après'][notch] ?? String(notch);
+  if (notch === 0) return t('table.before');
+  if (notch === 5) return t('table.after');
+  return ['1–2', '2–3', '3–4', '4–5'][notch - 1] ?? String(notch);
 }
 
 function renderSortingZone(player, compact = false, current = null) {
@@ -1218,7 +1249,7 @@ function renderOwnStand(player) {
       { class: 'own-slot-body' },
       h('span', { class: 'slot-index', text: ordinal(index + 1) }),
       backTile(color),
-      h('span', { class: 'slot-color' }, h('span', { text: color.symbol }), ` ${color.name}`),
+      h('span', { class: 'slot-color' }, h('span', { text: color.symbol }), ` ${colorName(color)}`),
     );
     if (compareMode) {
       return h(
@@ -1226,7 +1257,10 @@ function renderOwnStand(player) {
         {
           class: 'own-slot is-clickable',
           type: 'button',
-          'aria-label': `Comparer avec ta ${ordinal(index + 1)} tuile, ${color.name}`,
+          'aria-label': t('stand.compareAria', {
+            ordinal: ordinal(index + 1),
+            color: colorName(color),
+          }),
           onclick: () => doChooseCompareSlot(index),
         },
         body,
@@ -1243,17 +1277,17 @@ function renderOwnStand(player) {
     'section',
     { class: `card own-stand-card${compareMode ? ' is-choosing' : ''}` },
     h('div', { class: 'section-head' },
-      h('div', { class: 'section-title' }, h('h2', { text: 'Ton support' }), h('span', { class: 'pill', text: compareMode ? 'Choisis une tuile' : 'Numéros cachés' })),
-      h('span', { class: 'arrow-note', text: 'ordre croissant →' }),
+      h('div', { class: 'section-title' }, h('h2', { text: t('stand.title') }), h('span', { class: 'pill', text: compareMode ? t('stand.choose') : t('stand.hidden') })),
+      h('span', { class: 'arrow-note', text: t('stand.order') }),
     ),
-    h('p', { class: 'muted small', text: compareMode ? 'Touche la tuile à comparer avec la tuile sélectionnée.' : 'Tu connais les couleurs et les positions, pas les numéros.' }),
+    h('p', { class: 'muted small', text: compareMode ? t('stand.compareHint') : t('stand.hint') }),
     h('div', { class: 'own-stand' }, slots),
     h('div', { class: 'own-section' },
-      h('h3', { class: 'subtitle', text: 'Comparaisons' }),
+      h('h3', { class: 'subtitle', text: t('stand.comparisons') }),
       renderComparisonRow(player, false, clue),
     ),
     h('div', { class: 'own-section' },
-      h('h3', { class: 'subtitle', text: 'Zone de classement' }),
+      h('h3', { class: 'subtitle', text: t('stand.sorting') }),
       renderSortingZone(player, false, clue),
     ),
   );
@@ -1267,33 +1301,33 @@ function renderOpponent(opponent) {
     { class: `opponent${opponent.eliminated ? ' is-out' : ''}` },
     h('div', { class: 'opponent-head' },
       h('h4', { text: opponent.name }),
-      opponent.eliminated ? h('span', { class: 'badge badge--out', text: 'Éliminé' }) : null,
+      opponent.eliminated ? h('span', { class: 'badge badge--out', text: t('common.eliminated') }) : null,
     ),
     h('div', { class: 'tile-row' }, opponent.stand.map((n) => tileEl(n, { size: 'sm' }))),
     clueCount
       ? h(
           'details',
           { class: 'clue-details' },
-          h('summary', { text: `Indices posés (${clueCount})` }),
+          h('summary', { text: t('table.clues', { count: clueCount }) }),
           h('div', { class: 'clue-details-body' },
-            h('p', { class: 'mini-label', text: 'Zone de classement' }),
+            h('p', { class: 'mini-label', text: t('table.sorting') }),
             renderSortingZone(opponent, true),
-            h('p', { class: 'mini-label', text: 'Comparaisons' }),
+            h('p', { class: 'mini-label', text: t('table.comparisons') }),
             renderComparisonRow(opponent, true),
           ),
         )
-      : h('p', { class: 'muted small', text: 'Aucun indice posé.' }),
+      : h('p', { class: 'muted small', text: t('table.noClues') }),
   );
 }
 
 function colorLegend() {
   return h(
     'div',
-    { class: 'color-legend', 'aria-label': 'Légende des couleurs' },
+    { class: 'color-legend', 'aria-label': t('table.legend') },
     COLORS.map((color) =>
       h('span', { class: 'legend-item' },
         h('span', { class: 'legend-swatch', style: { background: color.hex, color: color.ink }, text: color.symbol }),
-        color.name,
+        colorName(color),
       ),
     ),
   );
@@ -1315,8 +1349,14 @@ function renderSheet(player, options = {}) {
         maxlength: '2',
         value: player.draft[index] ?? '',
         style: { '--draft-color': color.hex },
-        'aria-label': `Brouillon, ${ordinal(index + 1)} tuile, ${color.name}`,
-        title: `${ordinal(index + 1)} tuile : ${color.name}`,
+        'aria-label': t('sheet.draftAria', {
+          ordinal: ordinal(index + 1),
+          color: colorName(color),
+        }),
+        title: t('sheet.draftTitle', {
+          ordinal: ordinal(index + 1),
+          color: colorName(color),
+        }),
         oninput: (event) => {
           const value = event.target.value.replace(/\D/g, '').slice(0, 2);
           event.target.value = value;
@@ -1332,29 +1372,35 @@ function renderSheet(player, options = {}) {
     return h(
       'div',
       { class: `sheet-row${isFocus ? ' is-focus' : ''}` },
-      h('div', { class: 'sheet-row-label', 'aria-label': color.name, title: color.name },
+      h('div', { class: 'sheet-row-label', 'aria-label': colorName(color), title: colorName(color) },
         h('span', { class: 'row-swatch', style: { background: color.hex, color: color.ink }, text: color.symbol }),
       ),
       h(
         'div',
         { class: 'sheet-cells' },
-        tilesForColor(colorIndex).map((t) => {
-          const auto = visible.has(t.n);
-          const manual = player.manual.includes(t.n);
+        tilesForColor(colorIndex).map((cellTile) => {
+          const auto = visible.has(cellTile.n);
+          const manual = player.manual.includes(cellTile.n);
           const classes = `cell${auto ? ' is-auto' : ''}${manual ? ' is-manual' : ''}`;
           const attrs = {
             class: classes,
             type: 'button',
-            'aria-label': `${t.n}, ${color.name}, ${t.dots} point${t.dots > 1 ? 's' : ''}${auto ? ' — visible, barré automatiquement' : ''}`,
+            'aria-label': t('sheet.cellAria', {
+              n: cellTile.n,
+              color: colorName(color),
+              dots: cellTile.dots,
+              s: cellTile.dots > 1 ? 's' : '',
+              auto: auto ? t('sheet.auto') : '',
+            }),
             'aria-pressed': auto ? 'true' : String(manual),
             style: { '--cell-bg': color.hex, '--cell-ink': color.ink },
           };
           if (!auto) {
-            attrs.onclick = (event) => toggleManual(t.n, event.currentTarget, player);
+            attrs.onclick = (event) => toggleManual(cellTile.n, event.currentTarget, player);
           } else {
             attrs.disabled = true;
           }
-          return h('button', attrs, h('span', { class: 'cell-num', text: String(t.n) }), dotsEl(t.dots));
+          return h('button', attrs, h('span', { class: 'cell-num', text: String(cellTile.n) }), dotsEl(cellTile.dots));
         }),
       ),
     );
@@ -1381,17 +1427,15 @@ function renderSheet(player, options = {}) {
     embedded
       ? null
       : h('div', { class: 'section-head' },
-          h('h2', { text: 'Ma fiche de déduction' }),
+          h('h2', { text: t('sheet.title') }),
           h('span', { class: 'pill', text: player.name }),
         ),
-    h('p', { class: 'muted small' },
-      'Les numéros visibles sur la table sont barrés automatiquement. Barre les autres au fur et à mesure de tes déductions.',
-    ),
+    h('p', { class: 'muted small' }, t('sheet.intro')),
     context,
     h('div', { class: 'draft-block' },
-      h('h3', { class: 'subtitle', text: 'Mes 5 numéros (brouillon)' }),
+      h('h3', { class: 'subtitle', text: t('sheet.draft') }),
       draft,
-      h('p', { class: 'muted small', text: 'Les contours reprennent les couleurs de ton support, dans l’ordre croissant. Une seule annonce, et seulement pendant ton tour.' }),
+      h('p', { class: 'muted small', text: t('sheet.draftNote') }),
     ),
     h('div', { class: 'sheet-grid' }, rows),
     h('div', { class: 'sheet-actions' },
@@ -1403,8 +1447,8 @@ function renderSheet(player, options = {}) {
           persist();
           render();
         },
-      }, 'Effacer mes croix manuelles'),
-      h('span', { class: 'muted small', text: 'Les croix automatiques ne s’effacent pas.' }),
+      }, t('sheet.clear')),
+      h('span', { class: 'muted small', text: t('sheet.clearNote') }),
     ),
     renderJournalDetails(),
   );
@@ -1426,8 +1470,8 @@ function renderJournalDetails() {
   return h(
     'details',
     { class: 'journal-details' },
-    h('summary', { text: `Journal de la partie (${entries.length})` }),
-    h('p', { class: 'muted small', text: 'Journal public. Il ne contient aucun numéro caché.' }),
+    h('summary', { text: t('sheet.journal', { count: entries.length }) }),
+    h('p', { class: 'muted small', text: t('sheet.journalNote') }),
     entries.length
       ? h(
           'ol',
@@ -1436,22 +1480,22 @@ function renderJournalDetails() {
             h(
               'li',
               { class: `log-entry log-entry--${entry.type}` },
-              h('span', { class: 'log-turn', text: `Tour ${entry.turn}` }),
-              h('span', { text: entry.text }),
+              h('span', { class: 'log-turn', text: t('turn.turn', { n: entry.turn }) }),
+              h('span', { text: formatLog(entry) }),
             ),
           ),
         )
-      : h('p', { class: 'muted', text: 'Aucun événement.' }),
+      : h('p', { class: 'muted', text: t('sheet.noEvents') }),
   );
 }
 
 function gameOverSummary(game) {
   const winner = game.winner === null ? null : game.players[game.winner];
-  const title = winner ? `${winner.name} gagne !` : 'Aucun vainqueur';
+  const title = winner ? t('gameover.win', { name: winner.name }) : t('gameover.noWinner');
   let subtitle = '';
-  if (winner && game.winReason === 'claim') subtitle = 'Annonce GOT FIVE ! réussie.';
-  else if (winner && game.winReason === 'lastActive') subtitle = 'Dernier joueur en lice.';
-  else if (!winner) subtitle = 'Tous les joueurs se sont trompés.';
+  if (winner && game.winReason === 'claim') subtitle = t('gameover.claim');
+  else if (winner && game.winReason === 'lastActive') subtitle = t('gameover.lastActive');
+  else if (!winner) subtitle = t('gameover.allWrong');
   return { winner, title, subtitle };
 }
 
@@ -1461,24 +1505,25 @@ function renderGameOver() {
   const { winner, title, subtitle } = gameOverSummary(game);
 
   const actions = [
-    h('button', { class: 'btn btn--primary btn--wide', type: 'button', onclick: openReview }, 'Voir la table finale'),
-    h('button', { class: 'btn btn--secondary btn--wide', type: 'button', onclick: replay }, 'Rejouer avec les mêmes joueurs'),
-    h('button', { class: 'btn btn--ghost btn--wide', type: 'button', onclick: requestNewGame }, 'Nouvelle partie'),
-    h('button', { class: 'btn btn--ghost btn--wide', type: 'button', onclick: goHome }, 'Accueil'),
+    h('button', { class: 'btn btn--primary btn--wide', type: 'button', onclick: openReview }, t('gameover.review')),
+    h('button', { class: 'btn btn--secondary btn--wide', type: 'button', onclick: replay }, t('gameover.replay')),
+    h('button', { class: 'btn btn--ghost btn--wide', type: 'button', onclick: requestNewGame }, t('gameover.newGame')),
+    h('button', { class: 'btn btn--ghost btn--wide', type: 'button', onclick: goHome }, t('gameover.home')),
   ];
 
   return h(
     'main',
     { class: 'screen screen--over' },
+    h('div', { class: 'over-top' }, renderLangSwitcher()),
     h(
       'div',
       { class: 'card over-card' },
-      h('p', { class: 'eyebrow', text: 'Partie terminée' }),
+      h('p', { class: 'eyebrow', text: t('gameover.eyebrow') }),
       h('h1', { class: 'over-title', text: title }),
       subtitle ? h('p', { class: 'muted', text: subtitle }) : null,
       winner
         ? h('div', { class: 'winner-stand' },
-            h('p', { class: 'mini-label', text: 'Ses 5 numéros, dans l’ordre croissant' }),
+            h('p', { class: 'mini-label', text: t('gameover.numbers') }),
             h('div', { class: 'tile-row' }, winner.stand.map((n) => tileEl(n, { size: 'lg' }))),
           )
         : null,
@@ -1508,28 +1553,28 @@ function renderReviewPlayer(game, player) {
     h('div', { class: 'review-player-head' },
       h('h3', { text: player.name }),
       h('div', { class: 'badges' },
-        isWinner ? h('span', { class: 'badge badge--win', text: 'Gagnant' }) : null,
-        player.eliminated ? h('span', { class: 'badge badge--out', text: 'Éliminé' }) : null,
-        player.kind === 'bot' ? h('span', { class: 'badge badge--bot', text: 'IA' }) : null,
+        isWinner ? h('span', { class: 'badge badge--win', text: t('common.winner') }) : null,
+        player.eliminated ? h('span', { class: 'badge badge--out', text: t('common.eliminated') }) : null,
+        player.kind === 'bot' ? h('span', { class: 'badge badge--bot', text: t('common.ai') }) : null,
       ),
     ),
-    h('p', { class: 'mini-label', text: 'Support réel' }),
+    h('p', { class: 'mini-label', text: t('review.real') }),
     h('div', { class: 'tile-row' }, player.stand.map((n) => tileEl(n, { size: 'md' }))),
     h(
       'p',
       { class: `review-claim${claim ? (claim.correct ? ' review-claim--yes' : ' review-claim--no') : ''}` },
       claim
-        ? h('span', { class: `result-badge ${claim.correct ? 'result-badge--yes' : 'result-badge--no'}`, text: claim.correct ? 'Correcte' : 'Incorrecte' })
-        : h('span', { class: 'result-badge', text: 'Aucune annonce' }),
-      claim ? `Annonce : ${claim.numbers.join(' · ')}` : null,
+        ? h('span', { class: `result-badge ${claim.correct ? 'result-badge--yes' : 'result-badge--no'}`, text: claim.correct ? t('review.correct') : t('review.wrong') })
+        : h('span', { class: 'result-badge', text: t('review.noClaim') }),
+      claim ? t('review.claim', { numbers: claim.numbers.join(' · ') }) : null,
     ),
     clueCount
       ? h('div', { class: 'review-clues' },
-          h('p', { class: 'mini-label', text: 'Indices posés' }),
+          h('p', { class: 'mini-label', text: t('review.clues') }),
           renderSortingZone(player),
           renderComparisonRow(player),
         )
-      : h('p', { class: 'muted small', text: 'Aucun indice posé.' }),
+      : h('p', { class: 'muted small', text: t('review.noClues') }),
   );
 }
 
@@ -1541,54 +1586,54 @@ function renderReview() {
   return h(
     'main',
     { class: 'screen screen--review' },
-    topBar('Table finale', () => {
+    topBar(t('review.title'), () => {
       app.screen = 'gameover';
       render();
-    }),
+    }, renderLangSwitcher()),
     h(
       'section',
       { class: 'card review-summary' },
-      h('p', { class: 'eyebrow', text: 'Partie terminée' }),
+      h('p', { class: 'eyebrow', text: t('gameover.eyebrow') }),
       h('h1', { class: 'over-title', text: title }),
       subtitle ? h('p', { class: 'muted', text: subtitle }) : null,
-      h('p', { class: 'muted small' }, 'Tous les supports sont révélés. Comparez les annonces avec les numéros réels et le journal des actions.'),
+      h('p', { class: 'muted small' }, t('review.note')),
     ),
     h(
       'section',
       { class: 'review-section' },
-      h('div', { class: 'section-head' }, h('h2', { text: 'Supports finaux' })),
+      h('div', { class: 'section-head' }, h('h2', { text: t('review.supports') })),
       h('div', { class: 'review-players' }, game.players.map((player) => renderReviewPlayer(game, player))),
     ),
     h(
       'section',
       { class: 'card' },
       h('div', { class: 'section-head' },
-        h('h2', { text: 'Table publique finale' }),
-        h('span', { class: 'pill', text: `Réserve : ${game.supply.length}` }),
+        h('h2', { text: t('review.public') }),
+        h('span', { class: 'pill', text: t('review.reserve', { count: game.supply.length }) }),
       ),
       game.publicTiles.length
         ? h('div', { class: 'tile-row' }, game.publicTiles.map((n) => tileEl(n, { size: 'md' })))
-        : h('p', { class: 'muted small', text: 'Aucune tuile visible.' }),
+        : h('p', { class: 'muted small', text: t('review.noTiles') }),
     ),
     h(
       'section',
       { class: 'card' },
       h('div', { class: 'section-head' },
-        h('h2', { text: 'Journal des actions' }),
-        h('span', { class: 'pill', text: `${game.log.length} événement${game.log.length > 1 ? 's' : ''}` }),
+        h('h2', { text: t('review.journal') }),
+        h('span', { class: 'pill', text: t('review.events', { count: game.log.length, s: game.log.length > 1 ? 's' : '' }) }),
       ),
       h(
         'ol',
         { class: 'log-list review-log' },
         game.log.map((entry) =>
           h('li', { class: `log-entry log-entry--${entry.type}` },
-            h('span', { class: 'log-turn', text: `Tour ${entry.turn}` }),
-            h('span', { text: entry.text }),
+            h('span', { class: 'log-turn', text: t('turn.turn', { n: entry.turn }) }),
+            h('span', { text: formatLog(entry) }),
           ),
         ),
       ),
     ),
-    h('p', { class: 'fineprint' }, 'Table finale et journal publics. La partie est terminée.'),
+    h('p', { class: 'fineprint' }, t('review.fineprint')),
   );
 }
 
@@ -1614,31 +1659,29 @@ function renderRules() {
   return h(
     'main',
     { class: 'screen screen--rules' },
-    topBar('Règles', closeRules),
+    topBar(t('rules.title'), closeRules, renderLangSwitcher()),
     h(
       'article',
       { class: 'card rules-card' },
-      h('h2', { text: 'Le but' }),
-      h('p', {}, 'Être le premier à retrouver les 5 numéros cachés sur son support, en s’aidant des indices révélés pendant la partie.'),
-      h('h2', { text: 'Le principe' }),
-      h('p', {}, 'Tu vois les numéros de tous les autres joueurs, mais jamais les tiens. Chaque joueur a 5 tuiles, une de chaque couleur, rangées dans l’ordre croissant. Tu connais leurs couleurs et leurs positions, pas leurs numéros.'),
-      h('h2', { text: 'Un tour, deux actions' }),
+      h('h2', { text: t('rules.goalTitle') }),
+      h('p', {}, t('rules.goal')),
+      h('h2', { text: t('rules.principleTitle') }),
+      h('p', {}, t('rules.principle')),
+      h('h2', { text: t('rules.turnTitle') }),
       h('ol', {},
-        h('li', {}, h('strong', { text: 'Révéler' }), ' une tuile de la couleur de ton choix. Son numéro est annoncé et elle reste visible.'),
-        h('li', {}, h('strong', { text: 'Demander un indice' }), ' sur l’une des tuiles visibles : ',
-          h('strong', { text: 'classer' }), ' (l’app la place dans ton ordre croissant) ou ',
-          h('strong', { text: 'comparer' }), ' (l’app répond Oui ou Non sur l’égalité des points avec l’une de tes tuiles).'),
+        h('li', {}, t('rules.reveal')),
+        h('li', {}, t('rules.clue')),
       ),
-      h('h2', { text: 'La fiche' }),
-      h('p', {}, 'La fiche liste les 60 tuiles par couleur, numéro et points. Les numéros visibles sur la table sont barrés automatiquement ; tu peux barrer les autres à la main. En cas d’erreur, efface tes croix manuelles et recommence.'),
-      h('h2', { text: 'Annonce et fin' }),
-      h('p', {}, 'Pendant ton tour, tu peux annoncer « GOT FIVE ! » une seule fois : donne tes 5 numéros dans l’ordre croissant. Si tout est juste, tu gagnes. Si tu te trompes, tu es éliminé et la partie continue. Si tous les autres se trompent, le dernier joueur en lice gagne automatiquement.'),
-      h('p', { class: 'phase-note' }, 'Adaptation locale : l’annonce se fait uniquement pendant ton tour, l’application répond aux indices à la place du voisin, et les joueurs se passent l’appareil.'),
-      h('h2', { text: 'Mode solo contre l’IA' }),
-      h('p', {}, 'L’IA joue automatiquement. Elle ne voit pas ses propres numéros : elle déduit à partir des informations publiques et de ses propres indices. Son écran de tour ne montre aucun support humain. L’annonce reste limitée à son tour.'),
-      h('h2', { text: 'Confidentialité' }),
-      h('p', {}, 'Sur un seul appareil, chaque joueur ne regarde l’écran que pendant son tour. Les autres détournent le regard. Ne prononce jamais les numéros des tuiles de tes adversaires : ils pourraient entendre les leurs.'),
-      h('p', { class: 'fineprint' }, 'Version non officielle, à usage personnel. Règles inspirées du jeu Got Five ! de Blue Orange.'),
+      h('h2', { text: t('rules.sheetTitle') }),
+      h('p', {}, t('rules.sheet')),
+      h('h2', { text: t('rules.endTitle') }),
+      h('p', {}, t('rules.end')),
+      h('p', { class: 'phase-note' }, t('rules.adaptation')),
+      h('h2', { text: t('rules.aiTitle') }),
+      h('p', {}, t('rules.ai')),
+      h('h2', { text: t('rules.privacyTitle') }),
+      h('p', {}, t('rules.privacy')),
+      h('p', { class: 'fineprint' }, t('rules.fineprint')),
     ),
   );
 }
@@ -1654,7 +1697,7 @@ function buildClaimDialog() {
       inputmode: 'numeric',
       maxlength: '2',
       value: player.draft[index] ?? '',
-      'aria-label': `Numéro ${index + 1}`,
+      'aria-label': t('claim.input', { n: index + 1 }),
       required: true,
       oninput: (event) => {
         const value = event.target.value.replace(/\D/g, '').slice(0, 2);
@@ -1677,7 +1720,7 @@ function buildClaimDialog() {
           const numbers = inputs.map((input) => Number(input.value.trim()));
           if (!isValidClaimNumbers(numbers)) {
             error.hidden = false;
-            error.textContent = 'Il faut 5 numéros distincts, dans l’ordre croissant, entre 1 et 60.';
+            error.textContent = t('claim.invalid');
             return;
           }
           player.draft = numbers.map(String);
@@ -1695,7 +1738,7 @@ function buildClaimDialog() {
             } else {
               app.selectedTile = null;
               app.ficheOpen = false;
-              app.notice = `${player.name} a annoncé GOT FIVE ! mais s’est trompé(e) : éliminé(e).`;
+              app.notice = t('pass.eliminatedNotice', { name: player.name });
               enterCurrentTurn();
             }
           } catch (err) {
@@ -1704,16 +1747,16 @@ function buildClaimDialog() {
           }
         },
       },
-      h('h2', { id: 'claim-title', text: 'GOT FIVE !' }),
-      h('p', { class: 'muted', text: 'Annonce tes 5 numéros dans l’ordre croissant. Une seule tentative.' }),
-      h('button', { class: 'btn btn--ghost claim-fiche', type: 'button', onclick: openFiche }, 'Voir ma fiche'),
+      h('h2', { id: 'claim-title', text: t('claim.title') }),
+      h('p', { class: 'muted', text: t('claim.hint') }),
+      h('button', { class: 'btn btn--ghost claim-fiche', type: 'button', onclick: openFiche }, t('claim.fiche')),
       h('div', { class: 'claim-inputs' }, inputs),
       error,
       h(
         'div',
         { class: 'modal-actions' },
-        h('button', { class: 'btn btn--ghost', type: 'button', onclick: closeClaim }, 'Annuler'),
-        h('button', { class: 'btn btn--primary', type: 'submit' }, 'Annoncer'),
+        h('button', { class: 'btn btn--ghost', type: 'button', onclick: closeClaim }, t('claim.cancel')),
+        h('button', { class: 'btn btn--primary', type: 'submit' }, t('claim.submit')),
       ),
     ),
   );
@@ -1739,8 +1782,8 @@ function buildFicheDialog() {
       h(
         'div',
         { class: 'fiche-modal-head' },
-        h('h2', { id: 'fiche-title', text: 'Ma fiche' }),
-        h('button', { class: 'btn btn--ghost', type: 'button', onclick: closeFiche }, 'Fermer'),
+        h('h2', { id: 'fiche-title', text: t('dock.fiche') }),
+        h('button', { class: 'btn btn--ghost', type: 'button', onclick: closeFiche }, t('common.close')),
       ),
       renderSheet(player, { focus, embedded: true }),
     ),
@@ -1753,6 +1796,7 @@ function buildFicheDialog() {
 }
 
 function render() {
+  document.documentElement.lang = getLanguage();
   if (app.screen === 'turn' && app.privacy) app.screen = 'pass';
   if (app.screen === 'pass' && app.game?.phase === PHASES.GAME_OVER) app.screen = 'gameover';
   if (app.screen === 'turn' && app.game?.phase === PHASES.GAME_OVER) app.screen = 'gameover';
@@ -1774,7 +1818,7 @@ function render() {
   else view = renderHome();
 
   root.append(view);
-  document.title = TITLES[app.screen] ?? TITLES.home;
+  document.title = t(`titles.${app.screen}`);
 
   if (app.claimOpen && app.screen === 'turn') {
     const dialog = buildClaimDialog();
@@ -1799,6 +1843,7 @@ function registerServiceWorker() {
   }
 }
 
+initLanguage();
 app.saved = readSaveMeta();
 registerServiceWorker();
 render();

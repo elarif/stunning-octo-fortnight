@@ -12,6 +12,7 @@ import {
   chooseTile,
   claim,
   createGame,
+  currentPlayer,
   endTurn,
   isValidClaimNumbers,
   reveal,
@@ -31,10 +32,6 @@ function wrongClaim(stand) {
   return Array.from({ length: 60 }, (_, index) => index + 1)
     .filter((n) => !stand.includes(n))
     .slice(0, 5);
-}
-
-function numericTokens(text) {
-  return text.match(/\b\d{1,2}\b/g) ?? [];
 }
 
 test('les 60 tuiles suivent la fiche officielle', () => {
@@ -146,7 +143,10 @@ test('révéler une tuile ajoute une tuile publique et passe au choix', () => {
   assert.equal(next.phase, PHASES.CHOOSE_TILE);
   assert.equal(tile(next.revealed).colorIndex, colorIndex);
   assert.ok(next.publicTiles.includes(next.revealed));
-  assert.match(next.log.at(-1).text, new RegExp(`révèle le ${next.revealed}`));
+  const logEntry = next.log.at(-1);
+  assert.equal(logEntry.key, 'reveal');
+  assert.equal(logEntry.params.tile, next.revealed);
+  assert.equal(logEntry.params.player, currentPlayer(next).name);
 });
 
 test('classer place la tuile dans la bonne encoche sans révéler les numéros cachés', () => {
@@ -167,11 +167,12 @@ test('classer place la tuile dans la bonne encoche sans révéler les numéros c
   assert.ok(game.players[game.currentPlayer].sorting[expectedNotch].includes(n));
   assert.equal(game.publicTiles.length, 5);
 
-  const text = game.log[logIndex].text;
-  const tokens = new Set(numericTokens(text));
-  for (const hidden of player.stand) {
-    assert.equal(tokens.has(String(hidden)), false, `le journal ne doit pas révéler ${hidden}`);
-  }
+  const entry = game.log[logIndex];
+  assert.equal(entry.key, 'sort');
+  assert.equal(entry.params.tile, n);
+  assert.equal(entry.params.notch, expectedNotch);
+  assert.equal(Object.hasOwn(entry.params, 'target'), false);
+  assert.equal(Object.hasOwn(entry.params, 'stand'), false);
 });
 
 test('comparer répond Oui ou Non et place la tuile devant la bonne tuile', () => {
@@ -196,10 +197,14 @@ test('comparer répond Oui ou Non et place la tuile devant la bonne tuile', () =
   ]);
   assert.equal(game.publicTiles.length, 5);
 
-  const tokens = new Set(numericTokens(game.log[logIndex].text));
-  for (const hidden of player.stand) {
-    assert.equal(tokens.has(String(hidden)), false, `le journal ne doit pas révéler ${hidden}`);
-  }
+  const entry = game.log[logIndex];
+  assert.equal(entry.key, 'compare');
+  assert.equal(entry.params.tile, n);
+  assert.equal(entry.params.slot, 0);
+  assert.equal(entry.params.colorIndex, tile(target).colorIndex);
+  assert.equal(entry.params.same, expectedSame);
+  assert.equal(Object.hasOwn(entry.params, 'target'), false);
+  assert.equal(Object.hasOwn(entry.params, 'stand'), false);
 });
 
 test('annuler une comparaison revient au choix de la tuile publique', () => {
