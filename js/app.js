@@ -970,7 +970,7 @@ function renderTurn() {
       renderPublicTable(player),
       renderActionDock(player),
       renderOwnStand(player),
-      renderSheet(player, { focus }),
+      renderSheet(player, { focus, claimable: true }),
       renderJournalSection(),
     ),
     h('p', { class: 'fineprint' }, t('turn.fineprint')),
@@ -981,7 +981,6 @@ function renderActionDock(player) {
   const game = app.game;
   const phase = game.phase;
   const selected = app.selectedTile ?? game.chosenTile;
-  const canClaim = !player.eliminated && !player.hasClaimed;
   let prompt = '';
   let content = [];
 
@@ -1109,16 +1108,6 @@ function renderActionDock(player) {
       'div',
       { class: 'dock-head' },
       h('div', { class: 'dock-title' }, h('strong', { text: prompt })),
-      h(
-        'button',
-        {
-          class: 'btn btn--claim dock-claim',
-          type: 'button',
-          onclick: openClaim,
-          disabled: !canClaim,
-        },
-        t('common.gotFive'),
-      ),
     ),
     ...content,
   );
@@ -1378,6 +1367,17 @@ function draftOptions(player, index) {
   return { candidates, options };
 }
 
+function draftComplete(player) {
+  return player.draft.length === 5 && player.draft.every((value) => value !== '');
+}
+
+function syncDraftClaim(player) {
+  const button = document.querySelector('.draft-claim');
+  if (!button) return;
+  button.disabled =
+    !draftComplete(player) || player.eliminated || player.hasClaimed;
+}
+
 function syncDraftSelects(player) {
   normalizeDraft(player);
   for (const select of document.querySelectorAll('.draft-select')) {
@@ -1386,10 +1386,11 @@ function syncDraftSelects(player) {
     select.replaceChildren(...options);
     select.disabled = candidates.length <= 1;
   }
+  syncDraftClaim(player);
 }
 
 function renderSheet(player, options = {}) {
-  const { focus = null, embedded = false } = options;
+  const { focus = null, embedded = false, claimable = false } = options;
   const game = app.game;
   const visible = visibleNumbersFor(game, player.id);
   normalizeDraft(player);
@@ -1418,6 +1419,7 @@ function renderSheet(player, options = {}) {
           onchange: (event) => {
             player.draft[index] = event.target.value;
             persist();
+            syncDraftClaim(player);
           },
         },
         selectOptions,
@@ -1491,6 +1493,23 @@ function renderSheet(player, options = {}) {
     h('div', { class: 'draft-block' },
       h('h3', { class: 'subtitle', text: t('sheet.draft') }),
       draft,
+      claimable
+        ? h(
+            'div',
+            { class: 'draft-claim-row' },
+            h(
+              'button',
+              {
+                class: 'btn btn--claim draft-claim',
+                type: 'button',
+                onclick: openClaim,
+                disabled:
+                  !draftComplete(player) || player.eliminated || player.hasClaimed,
+              },
+              t('common.gotFive'),
+            ),
+          )
+        : null,
     ),
     h('div', { class: 'sheet-grid' }, rows),
     h('div', { class: 'sheet-actions' },
@@ -1801,7 +1820,6 @@ function buildClaimDialog() {
         },
       },
       h('h2', { id: 'claim-title', text: t('claim.title') }),
-      h('p', { class: 'muted', text: t('claim.hint') }),
       h('button', { class: 'btn btn--ghost claim-fiche', type: 'button', onclick: openFiche }, t('claim.fiche')),
       h('div', { class: 'claim-inputs' }, inputs),
       error,

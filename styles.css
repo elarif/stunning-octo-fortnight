@@ -423,10 +423,6 @@ summary:focus-visible {
   line-height: 1.2;
 }
 
-.dock-claim {
-  flex: 0 0 auto;
-}
-
 .action-dock .btn--ghost {
   color: var(--ink);
   border-color: var(--line);
@@ -1083,6 +1079,16 @@ button.tile:hover {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.5rem;
   max-width: 420px;
+}
+
+.draft-claim-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.7rem;
+}
+
+.draft-claim {
+  width: min(100%, 420px);
 }
 
 .draft-select {
