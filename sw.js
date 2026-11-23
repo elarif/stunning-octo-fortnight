@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gotfive-v11';
+const CACHE_NAME = 'gotfive-v12';
 const ASSETS = [
   './',
   './index.html',
@@ -11,6 +11,7 @@ const ASSETS = [
   './js/rng.js',
   './js/storage.js',
   './js/tiles.js',
+  './js/version.js',
   './icons/icon-180.png',
   './icons/icon-192.png',
   './icons/icon-512.png',

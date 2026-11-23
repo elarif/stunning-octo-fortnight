@@ -28,6 +28,7 @@ import {
 } from './i18n.js';
 import { randomSeed } from './rng.js';
 import { clearSave, loadGame, readSaveMeta, saveGame } from './storage.js';
+import { COMMIT } from './version.js';
 
 const root = document.getElementById('app');
 
@@ -1849,6 +1850,9 @@ function render() {
   else view = renderHome();
 
   root.append(view);
+  root.append(
+    h('footer', { class: 'app-version', text: t('common.commit', { sha: COMMIT }) }),
+  );
   document.title = t(`titles.${app.screen}`);
 
   if (app.claimOpen && app.screen === 'turn') {

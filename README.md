@@ -6,7 +6,7 @@ Version web non officielle du jeu de déduction **Got Five !**, jouable **hors l
 
 **<https://elarif.github.io/stunning-octo-fortnight/>**
 
-Le site est publié par GitHub Pages via GitHub Actions à chaque push sur `main`. Il est installable comme PWA et fonctionne hors ligne après le premier chargement.
+Le site est publié par GitHub Pages via GitHub Actions à chaque push sur `main`. Le workflow injecte le SHA court du commit dans `js/version.js` et l'affiche en bas de chaque écran. Le site est installable comme PWA et fonctionne hors ligne après le premier chargement.
 
 L'application tient le rôle du voisin pour répondre aux indices. Les joueurs se passent l'appareil ; les autres détournent le regard. L'annonce « GOT FIVE ! » se fait **uniquement pendant le tour du joueur**.
 

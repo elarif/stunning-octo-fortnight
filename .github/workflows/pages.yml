@@ -31,6 +31,13 @@ jobs:
           cp -R js icons _site/
           touch _site/.nojekyll
 
+      - name: Stamp build version
+        run: |
+          COMMIT="${GITHUB_SHA::7}"
+          echo "Build commit: $COMMIT"
+          printf "export const COMMIT = '%s';\n" "$COMMIT" > _site/js/version.js
+          sed -i "s|const CACHE_NAME = 'gotfive-[^']*';|const CACHE_NAME = 'gotfive-${COMMIT}';|" _site/sw.js
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
         with:

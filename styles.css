@@ -126,6 +126,15 @@ summary:focus-visible {
   text-align: center;
 }
 
+.app-version {
+  margin: 18px auto 0;
+  color: rgba(255, 250, 242, 0.34);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
 .card .fineprint,
 .rules-card .fineprint {
   color: var(--muted);

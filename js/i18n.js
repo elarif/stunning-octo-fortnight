@@ -40,6 +40,7 @@ const MESSAGES = {
       change: 'Changer',
       endTurn: 'Fin du tour',
       gotFive: 'GOT FIVE !',
+      commit: 'commit {sha}',
     },
     home: {
       eyebrow: 'Jeu de déduction — version locale',
@@ -312,6 +313,7 @@ const MESSAGES = {
       change: 'Change',
       endTurn: 'End turn',
       gotFive: 'GOT FIVE!',
+      commit: 'commit {sha}',
     },
     home: {
       eyebrow: 'Deduction game — local version',
