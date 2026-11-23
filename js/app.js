@@ -49,7 +49,6 @@ const app = {
   botMessage: null,
   langOpen: false,
   langScreen: null,
-  mobileSheetOpen: false,
 };
 
 function appendChildren(node, children) {
@@ -954,7 +953,6 @@ function renderTurn() {
       ),
       h('div', { class: 'turn-meta' },
         h('span', { class: 'pill', text: t('turn.reserve', { n: game.supply.length }) }),
-        h('button', { class: 'btn btn--claim', type: 'button', onclick: openClaim }, t('common.gotFive')),
         renderLangSwitcher(),
         h('button', { class: 'btn btn--icon', type: 'button', onclick: openRules, 'aria-label': t('turn.rules') }, '?'),
       ),
@@ -968,20 +966,12 @@ function renderTurn() {
     header,
     h(
       'div',
-      { class: 'turn-layout' },
-      h(
-        'div',
-        { class: 'turn-main' },
-        renderPublicTable(player),
-        h(
-          'div',
-          { class: 'mobile-bottom' },
-          renderActionDock(player),
-          renderMobileSheet(player, focus),
-        ),
-        renderOwnStand(player),
-      ),
-      h('aside', { class: 'fiche-sidebar' }, renderSheet(player, { focus })),
+      { class: 'turn-content' },
+      renderPublicTable(player),
+      renderActionDock(player),
+      renderOwnStand(player),
+      renderSheet(player, { focus }),
+      renderJournalSection(),
     ),
     h('p', { class: 'fineprint' }, t('turn.fineprint')),
   );
@@ -991,6 +981,7 @@ function renderActionDock(player) {
   const game = app.game;
   const phase = game.phase;
   const selected = app.selectedTile ?? game.chosenTile;
+  const canClaim = !player.eliminated && !player.hasClaimed;
   let prompt = '';
   let content = [];
 
@@ -998,7 +989,6 @@ function renderActionDock(player) {
     prompt = t('dock.reveal');
     if (game.supply.length === 0) {
       content = [
-        h('p', { class: 'dock-hint', text: t('dock.emptySupply') }),
         h('button', { class: 'btn btn--primary', type: 'button', onclick: doSkipReveal }, t('dock.skip')),
       ];
     } else {
@@ -1007,7 +997,6 @@ function renderActionDock(player) {
         (_, colorIndex) => game.supply.filter((n) => tile(n).colorIndex === colorIndex).length,
       );
       content = [
-        h('p', { class: 'dock-hint', text: t('dock.revealHint') }),
         h(
           'div',
           { class: 'color-grid dock-colors' },
@@ -1040,11 +1029,9 @@ function renderActionDock(player) {
   } else if (phase === PHASES.CHOOSE_TILE) {
     if (selected === null) {
       prompt = t('dock.chooseTile');
-      content = [
-        h('p', { class: 'dock-hint', text: t('dock.chooseTileHint') }),
-      ];
+      content = [];
     } else {
-      prompt = t('dock.what');
+      prompt = t('dock.selected');
       content = [
         h(
           'div',
@@ -1057,13 +1044,11 @@ function renderActionDock(player) {
               'button',
               { class: 'btn btn--choice', type: 'button', onclick: () => doChooseClue('sort') },
               h('strong', { text: t('dock.sort') }),
-              h('span', { text: t('dock.sortHint') }),
             ),
             h(
               'button',
               { class: 'btn btn--choice', type: 'button', onclick: () => doChooseClue('compare') },
               h('strong', { text: t('dock.compare') }),
-              h('span', { text: t('dock.compareHint') }),
             ),
           ),
           h('button', { class: 'btn btn--ghost dock-change', type: 'button', onclick: clearSelectedTile }, t('dock.change')),
@@ -1084,13 +1069,11 @@ function renderActionDock(player) {
             'button',
             { class: 'btn btn--choice', type: 'button', onclick: () => doChooseClue('sort') },
             h('strong', { text: t('dock.sort') }),
-            h('span', { text: t('dock.sortHint') }),
           ),
           h(
             'button',
             { class: 'btn btn--choice', type: 'button', onclick: () => doChooseClue('compare') },
             h('strong', { text: t('dock.compare') }),
-            h('span', { text: t('dock.compareHint') }),
           ),
         ),
         h('button', { class: 'btn btn--ghost dock-change', type: 'button', onclick: doCancelClue }, t('dock.change')),
@@ -1103,7 +1086,7 @@ function renderActionDock(player) {
         'div',
         { class: 'dock-choice-row' },
         tileEl(game.chosenTile, { size: 'sm' }),
-        h('span', { class: 'dock-hint dock-inline-hint', text: t('dock.compareTouch') }),
+        h('span', { 'aria-hidden': 'true' }),
         h('button', { class: 'btn btn--ghost dock-change', type: 'button', onclick: doCancelClue }, t('dock.change')),
       ),
     ];
@@ -1125,11 +1108,16 @@ function renderActionDock(player) {
     h(
       'div',
       { class: 'dock-head' },
+      h('div', { class: 'dock-title' }, h('strong', { text: prompt })),
       h(
-        'div',
-        { class: 'dock-title' },
-        h('span', { class: 'dock-kicker', text: t('dock.kicker', { name: player.name }) }),
-        h('strong', { text: prompt }),
+        'button',
+        {
+          class: 'btn btn--claim dock-claim',
+          type: 'button',
+          onclick: openClaim,
+          disabled: !canClaim,
+        },
+        t('common.gotFive'),
       ),
     ),
     ...content,
@@ -1193,16 +1181,14 @@ function renderVisibleTiles() {
   return h(
     'div',
     { class: 'tile-row public-row' },
-    tiles.length
-      ? tiles.map((n) =>
-          tileEl(n, {
-            size: 'lg',
-            onclick: canPick ? () => selectPublicTile(n) : null,
-            selected: selected === n,
-            highlight: game.lastRevealed === n && game.revealed !== null,
-          }),
-        )
-      : h('p', { class: 'muted', text: t('table.noTiles') }),
+    tiles.map((n) =>
+      tileEl(n, {
+        size: 'lg',
+        onclick: canPick ? () => selectPublicTile(n) : null,
+        selected: selected === n,
+        highlight: game.lastRevealed === n && game.revealed !== null,
+      }),
+    ),
   );
 }
 
@@ -1309,10 +1295,11 @@ function renderOwnStand(player) {
     'section',
     { class: `card own-stand-card${compareMode ? ' is-choosing' : ''}` },
     h('div', { class: 'section-head' },
-      h('div', { class: 'section-title' }, h('h2', { text: t('stand.title') }), h('span', { class: 'pill', text: compareMode ? t('stand.choose') : t('stand.hidden') })),
-      h('span', { class: 'arrow-note', text: t('stand.order') }),
+      h('div', { class: 'section-title' },
+        h('h2', { text: t('stand.title') }),
+        compareMode ? h('span', { class: 'pill', text: t('stand.choose') }) : null,
+      ),
     ),
-    h('p', { class: 'muted small', text: compareMode ? t('stand.compareHint') : t('stand.hint') }),
     h('div', { class: 'own-stand' }, slots),
     h('div', { class: 'own-section' },
       h('h3', { class: 'subtitle', text: t('stand.comparisons') }),
@@ -1348,7 +1335,7 @@ function renderOpponent(opponent) {
             renderComparisonRow(opponent, true),
           ),
         )
-      : h('p', { class: 'muted small', text: t('table.noClues') }),
+      : null,
   );
 }
 
@@ -1499,14 +1486,11 @@ function renderSheet(player, options = {}) {
       ? null
       : h('div', { class: 'section-head' },
           h('h2', { text: t('sheet.title') }),
-          h('span', { class: 'pill', text: player.name }),
         ),
-    h('p', { class: 'muted small' }, t('sheet.intro')),
     context,
     h('div', { class: 'draft-block' },
       h('h3', { class: 'subtitle', text: t('sheet.draft') }),
       draft,
-      h('p', { class: 'muted small', text: t('sheet.draftNote') }),
     ),
     h('div', { class: 'sheet-grid' }, rows),
     h('div', { class: 'sheet-actions' },
@@ -1519,45 +1503,6 @@ function renderSheet(player, options = {}) {
           render();
         },
       }, t('sheet.clear')),
-      h('span', { class: 'muted small', text: t('sheet.clearNote') }),
-    ),
-    renderJournalDetails(),
-  );
-}
-
-function renderMobileSheet(player, focus) {
-  return h(
-    'section',
-    { class: `mobile-sheet${app.mobileSheetOpen ? ' is-open' : ''}` },
-    h(
-      'button',
-      {
-        class: 'mobile-sheet-handle',
-        type: 'button',
-        'aria-expanded': String(app.mobileSheetOpen),
-        'aria-controls': 'mobile-sheet-body',
-        onclick: () => {
-          app.mobileSheetOpen = !app.mobileSheetOpen;
-          render();
-        },
-      },
-      h('span', { class: 'mobile-sheet-grip', 'aria-hidden': 'true' }),
-      h('span', { class: 'mobile-sheet-title', text: t('dock.fiche') }),
-      h(
-        'span',
-        { class: 'mobile-sheet-hint' },
-        app.mobileSheetOpen ? t('sheet.collapse') : t('sheet.expand'),
-        h('span', {
-          class: 'mobile-sheet-caret',
-          'aria-hidden': 'true',
-          text: app.mobileSheetOpen ? '▾' : '▴',
-        }),
-      ),
-    ),
-    h(
-      'div',
-      { class: 'mobile-sheet-body', id: 'mobile-sheet-body' },
-      renderSheet(player, { focus, embedded: true }),
     ),
   );
 }
@@ -1573,28 +1518,27 @@ function toggleManual(n, cell, player) {
   syncDraftSelects(player);
 }
 
-function renderJournalDetails() {
+function renderJournalSection() {
   const game = app.game;
   const entries = game.log.slice().reverse();
   return h(
-    'details',
-    { class: 'journal-details' },
-    h('summary', { text: t('sheet.journal', { count: entries.length }) }),
-    h('p', { class: 'muted small', text: t('sheet.journalNote') }),
-    entries.length
-      ? h(
-          'ol',
-          { class: 'log-list' },
-          entries.map((entry) =>
-            h(
-              'li',
-              { class: `log-entry log-entry--${entry.type}` },
-              h('span', { class: 'log-turn', text: t('turn.turn', { n: entry.turn }) }),
-              h('span', { text: formatLog(entry) }),
-            ),
-          ),
-        )
-      : h('p', { class: 'muted', text: t('sheet.noEvents') }),
+    'section',
+    { class: 'card journal-card' },
+    h('div', { class: 'section-head' },
+      h('h2', { text: t('sheet.journal', { count: entries.length }) }),
+    ),
+    h(
+      'ol',
+      { class: 'log-list journal-log' },
+      entries.map((entry) =>
+        h(
+          'li',
+          { class: `log-entry log-entry--${entry.type}` },
+          h('span', { class: 'log-turn', text: t('turn.turn', { n: entry.turn }) }),
+          h('span', { text: formatLog(entry) }),
+        ),
+      ),
+    ),
   );
 }
 
