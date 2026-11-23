@@ -14,7 +14,7 @@ The board and the deduction sheet are no longer separate tabs: the sheet stays v
 
 In **Solo vs AI**, the AI plays its turns automatically. It is a local solver with no network or LLM: it never sees its own numbers, keeps candidate numbers per color and only calls GOT FIVE! when a unique solution is consistent with its clues. Its turn screen is public and never shows a human stand.
 
-The interface, rules and game log are available in **French, English and Polish**. The browser language is used on first launch, then the choice is remembered. The flag selector (FR/EN/PL) is available on every screen.
+The interface, rules and game log are available in **French, English and Polish**. The browser language is used on first launch, then the choice is remembered. A flag dropdown (FR/EN/PL) is available on every screen.
 
 At the end of the game, **View final table** reveals every stand, each player's call and the full action log so mistakes can be compared.
 

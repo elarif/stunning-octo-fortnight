@@ -17,6 +17,7 @@ import {
 } from './engine.js';
 import { buildBotView, chooseBotAction } from './bot.js';
 import {
+  LANGUAGES,
   colorName,
   formatLog,
   getLanguage,
@@ -46,6 +47,8 @@ const app = {
   botPlayerId: null,
   botTimer: null,
   botMessage: null,
+  langOpen: false,
+  langScreen: null,
 };
 
 function appendChildren(node, children) {
@@ -133,35 +136,66 @@ function backTile(tileData) {
 
 function renderLangSwitcher() {
   const language = getLanguage();
-  const option = (code) =>
+  const label = t('common.language');
+  return h(
+    'div',
+    { class: 'lang-dropdown' },
     h(
       'button',
       {
-        class: `lang-btn${language === code ? ' is-active' : ''}`,
+        class: 'lang-trigger',
         type: 'button',
-        'aria-pressed': String(language === code),
-        'aria-label': `${t('common.language')} : ${t(`language.${code}`)}`,
-        title: t(`language.${code}`),
+        'aria-haspopup': 'true',
+        'aria-expanded': String(app.langOpen),
+        'aria-controls': app.langOpen ? 'lang-menu' : null,
+        'aria-label': `${label}: ${t(`language.${language}`)}`,
+        title: label,
         onclick: () => {
-          if (getLanguage() === code) return;
-          setLanguage(code);
+          app.langOpen = !app.langOpen;
+          app.langScreen = app.screen;
           render();
+          requestAnimationFrame(() => document.querySelector('.lang-trigger')?.focus());
         },
       },
       h('img', {
         class: 'flag-icon',
-        src: `./icons/flag-${code}.svg`,
+        src: `./icons/flag-${language}.svg`,
         alt: '',
         'aria-hidden': 'true',
       }),
-      h('span', { class: 'lang-code', text: code.toUpperCase() }),
-    );
-  return h(
-    'div',
-    { class: 'lang-switch', role: 'group', 'aria-label': t('common.language') },
-    option('fr'),
-    option('en'),
-    option('pl'),
+      h('span', { class: 'lang-code', text: language.toUpperCase() }),
+      h('span', { class: 'lang-caret', 'aria-hidden': 'true', text: '▾' }),
+    ),
+    app.langOpen
+      ? h(
+          'div',
+          { class: 'lang-menu', id: 'lang-menu', role: 'group', 'aria-label': label },
+          LANGUAGES.map((code) =>
+            h(
+              'button',
+              {
+                class: `lang-option${code === language ? ' is-active' : ''}`,
+                type: 'button',
+                'aria-pressed': String(code === language),
+                onclick: () => {
+                  app.langOpen = false;
+                  if (getLanguage() !== code) setLanguage(code);
+                  render();
+                  requestAnimationFrame(() => document.querySelector('.lang-trigger')?.focus());
+                },
+              },
+              h('img', {
+                class: 'flag-icon',
+                src: `./icons/flag-${code}.svg`,
+                alt: '',
+                'aria-hidden': 'true',
+              }),
+              h('span', { class: 'lang-option-name', text: t(`language.${code}`) }),
+              h('span', { class: 'lang-option-code', text: code.toUpperCase() }),
+            ),
+          ),
+        )
+      : null,
   );
 }
 
@@ -1829,6 +1863,7 @@ function buildFicheDialog() {
 }
 
 function render() {
+  if (app.langOpen && app.langScreen !== app.screen) app.langOpen = false;
   document.documentElement.lang = getLanguage();
   if (app.screen === 'turn' && app.privacy) app.screen = 'pass';
   if (app.screen === 'pass' && app.game?.phase === PHASES.GAME_OVER) app.screen = 'gameover';
@@ -1878,6 +1913,20 @@ function registerServiceWorker() {
     });
   }
 }
+
+document.addEventListener('click', (event) => {
+  if (!app.langOpen) return;
+  if (event.target instanceof Element && event.target.closest('.lang-dropdown')) return;
+  app.langOpen = false;
+  render();
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape' || !app.langOpen) return;
+  app.langOpen = false;
+  render();
+  requestAnimationFrame(() => document.querySelector('.lang-trigger')?.focus());
+});
 
 initLanguage();
 app.saved = readSaveMeta();

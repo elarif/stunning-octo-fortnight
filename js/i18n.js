@@ -1,7 +1,8 @@
 import { COLORS } from './tiles.js';
 
 const STORAGE_KEY = 'gotfive.lang';
-const SUPPORTED_LANGUAGES = new Set(['fr', 'en', 'pl']);
+export const LANGUAGES = Object.freeze(['fr', 'en', 'pl']);
+const SUPPORTED_LANGUAGES = new Set(LANGUAGES);
 
 const MESSAGES = {
   fr: {

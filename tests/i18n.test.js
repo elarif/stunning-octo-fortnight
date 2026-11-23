@@ -2,13 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-import { hasTranslation } from '../js/i18n.js';
-
-const LANGUAGES = ['fr', 'en', 'pl'];
+import { LANGUAGES, hasTranslation } from '../js/i18n.js';
 
 function usedKeys() {
   const source = fs.readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
-  const keys = new Set([...source.matchAll(/t\('([^']+)'/g)].map((match) => match[1]));
+  const keys = new Set(
+    [...source.matchAll(/(?<![A-Za-z0-9_$])t\('([^']+)'/g)].map((match) => match[1]),
+  );
 
   for (const screen of ['home', 'setup', 'pass', 'notes', 'turn', 'bot', 'gameover', 'review', 'rules']) {
     keys.add(`titles.${screen}`);
