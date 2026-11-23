@@ -822,7 +822,6 @@ function renderBotTurn() {
         { class: 'card' },
         h('div', { class: 'section-head' },
           h('h2', { text: t('bot.support') }),
-          h('span', { class: 'pill', text: t('bot.visible') }),
         ),
         h('p', { class: 'muted small', text: t('bot.note') }),
         h('div', { class: 'tile-row' }, bot.stand.map((n) => tileEl(n, { size: 'md' }))),
@@ -962,26 +961,37 @@ function renderActionDock(player) {
       ];
     } else {
       const available = canRevealColors(game);
+      const counts = COLORS.map(
+        (_, colorIndex) => game.supply.filter((n) => tile(n).colorIndex === colorIndex).length,
+      );
       content = [
         h('p', { class: 'dock-hint', text: t('dock.revealHint') }),
         h(
           'div',
           { class: 'color-grid dock-colors' },
-          COLORS.map((color, index) =>
-            h(
+          COLORS.map((color, index) => {
+            const count = counts[index];
+            const label = t('dock.revealColor', {
+              color: colorName(color),
+              count,
+              s: count > 1 ? 's' : '',
+            });
+            return h(
               'button',
               {
                 class: 'color-choice',
                 type: 'button',
                 disabled: !available[index],
                 style: { '--color-bg': color.hex, '--color-ink': color.ink },
+                'aria-label': label,
+                title: label,
                 onclick: () => doReveal(index),
               },
               h('span', { class: 'color-symbol', text: color.symbol }),
               h('span', { class: 'color-name', text: colorName(color) }),
-              h('span', { class: 'color-hint', text: available[index] ? t('common.reveal') : t('common.exhausted') }),
-            ),
-          ),
+              h('span', { class: 'color-count', text: String(count) }),
+            );
+          }),
         ),
       ];
     }
@@ -1121,26 +1131,16 @@ function renderPublicTable(player) {
   return h(
     'section',
     { class: 'card public-table' },
-    h('div', { class: 'section-head' },
-      h('h2', { text: t('table.title') }),
-      h('span', { class: 'pill', text: t('table.visible') }),
-    ),
-    renderVisibleTiles(),
+    h('div', { class: 'public-block public-block--visible' }, renderVisibleTiles()),
     h(
       'div',
       { class: 'public-block public-block--opponents' },
-      h('div', { class: 'public-block-head' },
-        h('h3', { text: t('table.opponents') }),
-        h('span', { class: 'pill', text: `${opponents.length}` }),
-      ),
-      h('p', { class: 'muted small', text: t('table.opponentsNote') }),
       h(
         'div',
         { class: 'opponent-list' },
         opponents.map((opponent) => renderOpponent(opponent)),
       ),
     ),
-    colorLegend(),
   );
 }
 
@@ -1151,24 +1151,15 @@ function renderVisibleTiles() {
   const tiles = game.publicTiles;
   return h(
     'div',
-    { class: 'public-block public-block--visible' },
-    h('div', { class: 'public-block-head' },
-      h('h3', { text: t('table.visibleTiles') }),
-      h('span', { class: 'pill', text: t('table.count', { count: tiles.length, s: tiles.length > 1 ? 's' : '' }) }),
-    ),
-    h('p', { class: 'muted small', text: canPick ? t('table.selectHint') : t('table.remainHint') }),
+    { class: 'tile-row public-row' },
     tiles.length
-      ? h(
-          'div',
-          { class: 'tile-row public-row' },
-          tiles.map((n) =>
-            tileEl(n, {
-              size: 'lg',
-              onclick: canPick ? () => selectPublicTile(n) : null,
-              selected: selected === n,
-              highlight: game.lastRevealed === n && game.revealed !== null,
-            }),
-          ),
+      ? tiles.map((n) =>
+          tileEl(n, {
+            size: 'lg',
+            onclick: canPick ? () => selectPublicTile(n) : null,
+            selected: selected === n,
+            highlight: game.lastRevealed === n && game.revealed !== null,
+          }),
         )
       : h('p', { class: 'muted', text: t('table.noTiles') }),
   );
@@ -1320,50 +1311,89 @@ function renderOpponent(opponent) {
   );
 }
 
-function colorLegend() {
-  return h(
-    'div',
-    { class: 'color-legend', 'aria-label': t('table.legend') },
-    COLORS.map((color) =>
-      h('span', { class: 'legend-item' },
-        h('span', { class: 'legend-swatch', style: { background: color.hex, color: color.ink }, text: color.symbol }),
-        colorName(color),
-      ),
+function remainingNumbers(player, index) {
+  const visible = visibleNumbersFor(app.game, player.id);
+  const colorIndex = tile(player.stand[index]).colorIndex;
+  return tilesForColor(colorIndex)
+    .map((value) => value.n)
+    .filter((n) => !visible.has(n) && !player.manual.includes(n));
+}
+
+function normalizeDraft(player) {
+  let changed = false;
+  for (let index = 0; index < 5; index += 1) {
+    const candidates = remainingNumbers(player, index);
+    const current = player.draft[index] ?? '';
+    if (candidates.length === 1 && current !== String(candidates[0])) {
+      player.draft[index] = String(candidates[0]);
+      changed = true;
+    } else if (current !== '' && !candidates.includes(Number(current))) {
+      player.draft[index] = '';
+      changed = true;
+    }
+  }
+  if (changed) persist();
+}
+
+function draftOptions(player, index) {
+  const candidates = remainingNumbers(player, index);
+  const value = player.draft[index] ?? '';
+  const options = [];
+  if (candidates.length !== 1) {
+    options.push(h('option', { value: '', text: t('sheet.none'), selected: value === '' }));
+  }
+  options.push(
+    ...candidates.map((n) =>
+      h('option', { value: String(n), text: String(n), selected: String(n) === value }),
     ),
   );
+  return { candidates, options };
+}
+
+function syncDraftSelects(player) {
+  normalizeDraft(player);
+  for (const select of document.querySelectorAll('.draft-select')) {
+    const index = Number(select.dataset.index);
+    const { candidates, options } = draftOptions(player, index);
+    select.replaceChildren(...options);
+    select.disabled = candidates.length <= 1;
+  }
 }
 
 function renderSheet(player, options = {}) {
   const { focus = null, embedded = false } = options;
   const game = app.game;
   const visible = visibleNumbersFor(game, player.id);
+  normalizeDraft(player);
   const draft = h(
     'div',
     { class: 'draft-row' },
     Array.from({ length: 5 }, (_, index) => {
       const color = tile(player.stand[index]).color;
-      return h('input', {
-        class: 'draft-input',
-        type: 'text',
-        inputmode: 'numeric',
-        maxlength: '2',
-        value: player.draft[index] ?? '',
-        style: { '--draft-color': color.hex },
-        'aria-label': t('sheet.draftAria', {
-          ordinal: ordinal(index + 1),
-          color: colorName(color),
-        }),
-        title: t('sheet.draftTitle', {
-          ordinal: ordinal(index + 1),
-          color: colorName(color),
-        }),
-        oninput: (event) => {
-          const value = event.target.value.replace(/\D/g, '').slice(0, 2);
-          event.target.value = value;
-          player.draft[index] = value;
-          persist();
-        },
+      const { candidates, options: selectOptions } = draftOptions(player, index);
+      const label = t('sheet.draftAria', {
+        ordinal: ordinal(index + 1),
+        color: colorName(color),
       });
+      return h(
+        'select',
+        {
+          class: 'draft-select',
+          style: { '--draft-color': color.hex },
+          'data-index': String(index),
+          'aria-label': label,
+          title: t('sheet.draftTitle', {
+            ordinal: ordinal(index + 1),
+            color: colorName(color),
+          }),
+          disabled: candidates.length <= 1,
+          onchange: (event) => {
+            player.draft[index] = event.target.value;
+            persist();
+          },
+        },
+        selectOptions,
+      );
     }),
   );
 
@@ -1462,6 +1492,7 @@ function toggleManual(n, cell, player) {
   cell.classList.toggle('is-manual', set.has(n));
   cell.setAttribute('aria-pressed', String(set.has(n)));
   persist();
+  syncDraftSelects(player);
 }
 
 function renderJournalDetails() {

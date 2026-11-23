@@ -557,10 +557,15 @@ summary:focus-visible {
   line-height: 1.1;
 }
 
-.color-hint {
-  font-size: 0.63rem;
-  font-weight: 650;
-  opacity: 0.7;
+.color-count {
+  min-width: 1.4rem;
+  padding: 0.05rem 0.3rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.18);
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+  line-height: 1.2;
 }
 
 .clue-buttons {
@@ -925,25 +930,6 @@ button.tile:hover {
   border-top: 1px dashed var(--line);
 }
 
-.public-block-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.35rem;
-}
-
-.public-block-head h3 {
-  margin: 0;
-  font-size: 0.96rem;
-}
-
-.public-table .color-legend {
-  margin-top: 0.9rem;
-  padding-top: 0.75rem;
-  border-top: 1px dashed var(--line);
-}
-
 .public-table .opponent {
   background: rgba(255, 250, 242, 0.62);
 }
@@ -1086,39 +1072,6 @@ button.tile:hover {
   text-transform: uppercase;
 }
 
-.color-legend {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem 1rem;
-  padding: 0.4rem;
-  color: rgba(255, 250, 242, 0.68);
-  font-size: 0.73rem;
-  font-weight: 700;
-}
-
-.card .color-legend {
-  color: var(--muted);
-}
-
-.legend-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-
-.legend-swatch {
-  display: grid;
-  place-items: center;
-  width: 19px;
-  height: 19px;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  border-radius: 5px;
-  font-size: 0.58rem;
-  font-weight: 900;
-}
-
 .sheet-card {
   overflow: hidden;
 }
@@ -1165,7 +1118,7 @@ button.tile:hover {
   max-width: 420px;
 }
 
-.draft-input {
+.draft-select {
   width: 100%;
   padding: 0.6rem 0.2rem;
   border: 2px solid var(--draft-color, var(--line));
@@ -1176,9 +1129,16 @@ button.tile:hover {
   font-size: 1.15rem;
   font-weight: 900;
   text-align: center;
+  text-align-last: center;
+  cursor: pointer;
 }
 
-.draft-input:focus {
+.draft-select:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.draft-select:focus {
   border-color: var(--draft-color, var(--accent));
   outline-color: var(--draft-color, var(--accent-2));
 }
@@ -1959,10 +1919,6 @@ button.tile:hover {
 
   .color-name {
     font-size: 0.7rem;
-  }
-
-  .color-hint {
-    font-size: 0.58rem;
   }
 
   .clue-buttons {

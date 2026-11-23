@@ -10,7 +10,7 @@ Le site est publié par GitHub Pages via GitHub Actions à chaque push sur `main
 
 L'application tient le rôle du voisin pour répondre aux indices. Les joueurs se passent l'appareil ; les autres détournent le regard. L'annonce « GOT FIVE ! » se fait **uniquement pendant le tour du joueur**.
 
-Le plateau et la fiche ne sont plus des onglets séparés : la fiche reste visible dans un panneau latéral sur desktop et s'ouvre en tiroir sur mobile. Les tuiles visibles et les supports adverses sont regroupés dans une table publique. Les actions apparaissent dans un dock contextuel près de la tuile sélectionnée, et le résultat d'un indice met en évidence l'encoche, la comparaison et la rangée de fiche concernée. Les cases du brouillon reprennent les couleurs des positions du support.
+Le plateau et la fiche ne sont plus des onglets séparés : la fiche reste visible dans un panneau latéral sur desktop et s'ouvre en tiroir sur mobile. Les tuiles visibles et les supports adverses sont regroupés dans une table publique. Les actions apparaissent dans un dock contextuel près de la tuile sélectionnée, et le résultat d'un indice met en évidence l'encoche, la comparaison et la rangée de fiche concernée. Les cinq sélecteurs du brouillon ne proposent que les numéros encore possibles de chaque couleur et se remplissent seuls quand il n'en reste qu'un. Les boutons de révélation affichent le nombre de tuiles restantes par couleur.
 
 En mode **Solo vs IA**, l'IA joue automatiquement ses tours. C'est un solveur local, sans réseau ni LLM : elle ne voit pas ses propres numéros, entretient des candidats par couleur et annonce seulement quand une solution unique est cohérente avec ses indices. Son écran de tour est public et n'affiche aucun support humain.
 
