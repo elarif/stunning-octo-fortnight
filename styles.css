@@ -381,7 +381,7 @@ summary:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  padding: 14px 16px;
+  padding: 10px 14px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: var(--radius);
   background: rgba(30, 12, 47, 0.92);
@@ -398,20 +398,31 @@ summary:focus-visible {
 
 .turn-title {
   display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
+  flex: 1 1 auto;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.turn-title .eyebrow {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .turn-player {
+  min-width: 0;
   margin: 0;
   color: var(--white);
   font-size: 1.28rem;
   line-height: 1.1;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .turn-meta {
   display: flex;
+  flex: 0 0 auto;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
@@ -1780,7 +1791,8 @@ button.tile:hover {
   }
 
   .turn-header-main {
-    align-items: flex-start;
+    align-items: center;
+    gap: 8px;
   }
 
   .sheet-row {
@@ -1866,9 +1878,20 @@ button.tile:hover {
     font-size: 1.35rem;
   }
 
+  .turn-header {
+    padding: 9px 12px;
+  }
+
   .turn-header-main {
-    flex-direction: column;
-    align-items: stretch;
+    gap: 8px;
+  }
+
+  .turn-title {
+    gap: 0.35rem;
+  }
+
+  .turn-title .eyebrow {
+    font-size: 0.66rem;
   }
 
   .turn-meta {
