@@ -127,12 +127,45 @@ summary:focus-visible {
 }
 
 .app-version {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem 0.8rem;
   margin: 18px auto 0;
   color: rgba(255, 250, 242, 0.34);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.68rem;
   letter-spacing: 0.02em;
   text-align: center;
+}
+
+.version-button {
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+}
+
+.version-button:focus-visible {
+  outline: 1px dotted currentColor;
+  outline-offset: 3px;
+}
+
+.version-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.version-status {
+  color: rgba(255, 250, 242, 0.72);
+  font-family: var(--font);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0;
 }
 
 .card .fineprint,

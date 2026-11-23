@@ -49,6 +49,9 @@ const app = {
   botMessage: null,
   langOpen: false,
   langScreen: null,
+  updating: false,
+  updateMessage: null,
+  updateTimer: null,
 };
 
 function appendChildren(node, children) {
@@ -1891,7 +1894,32 @@ function render() {
 
   root.append(view);
   root.append(
-    h('footer', { class: 'app-version', text: t('common.commit', { sha: COMMIT }) }),
+    h(
+      'footer',
+      { class: 'app-version' },
+      h(
+        'button',
+        {
+          class: 'version-button',
+          type: 'button',
+          title: t('common.updateHint'),
+          'aria-label': `${t('common.commit', { sha: COMMIT })} — ${t('common.updateHint')}`,
+          disabled: app.updating,
+          onclick: (event) => {
+            if (event.detail === 0) downloadLatestVersion();
+          },
+          ondblclick: downloadLatestVersion,
+        },
+        t('common.commit', { sha: COMMIT }),
+      ),
+      app.updateMessage
+        ? h('span', {
+            class: 'version-status',
+            role: 'status',
+            text: app.updateMessage,
+          })
+        : null,
+    ),
   );
   document.title = t(`titles.${app.screen}`);
 
@@ -1905,6 +1933,52 @@ function render() {
     const dialog = buildFicheDialog();
     root.append(dialog);
     dialog.showModal();
+  }
+}
+
+async function downloadLatestVersion() {
+  if (app.updating) return;
+  app.updating = true;
+  app.updateMessage = t('common.updating');
+  clearTimeout(app.updateTimer);
+  render();
+
+  let reloaded = false;
+  const reload = () => {
+    if (reloaded) return;
+    reloaded = true;
+    window.location.reload();
+  };
+  const onControllerChange = () => reload();
+
+  try {
+    if ('serviceWorker' in navigator) {
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (registration) {
+        navigator.serviceWorker.addEventListener('controllerchange', onControllerChange, {
+          once: true,
+        });
+        await registration.update();
+        const pending = registration.installing || registration.waiting;
+        if (!pending) {
+          reload();
+          return;
+        }
+        app.updateTimer = setTimeout(reload, 10000);
+        return;
+      }
+    }
+    reload();
+  } catch (error) {
+    navigator.serviceWorker?.removeEventListener('controllerchange', onControllerChange);
+    clearTimeout(app.updateTimer);
+    app.updating = false;
+    app.updateMessage = t('common.updateError');
+    render();
+    app.updateTimer = setTimeout(() => {
+      app.updateMessage = null;
+      render();
+    }, 5000);
   }
 }
 

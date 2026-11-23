@@ -43,6 +43,9 @@ const MESSAGES = {
       endTurn: 'Fin du tour',
       gotFive: 'GOT FIVE !',
       commit: 'commit {sha}',
+      updateHint: 'Double-clique pour télécharger la nouvelle version',
+      updating: 'Téléchargement de la nouvelle version…',
+      updateError: 'Mise à jour impossible. Vérifie ta connexion.',
     },
     home: {
       eyebrow: 'Jeu de déduction — version locale',
@@ -318,6 +321,9 @@ const MESSAGES = {
       endTurn: 'End turn',
       gotFive: 'GOT FIVE!',
       commit: 'commit {sha}',
+      updateHint: 'Double-click to download the new version',
+      updating: 'Downloading the new version…',
+      updateError: 'Update failed. Check your connection.',
     },
     home: {
       eyebrow: 'Deduction game — local version',
@@ -593,6 +599,9 @@ const MESSAGES = {
       endTurn: 'Zakończ turę',
       gotFive: 'GOT FIVE!',
       commit: 'commit {sha}',
+      updateHint: 'Kliknij dwukrotnie, aby pobrać nową wersję',
+      updating: 'Pobieranie nowej wersji…',
+      updateError: 'Nie udało się zaktualizować. Sprawdź połączenie.',
     },
     home: {
       eyebrow: 'Gra dedukcyjna — wersja lokalna',
