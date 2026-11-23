@@ -49,6 +49,7 @@ const app = {
   botMessage: null,
   langOpen: false,
   langScreen: null,
+  mobileSheetOpen: false,
 };
 
 function appendChildren(node, children) {
@@ -972,7 +973,12 @@ function renderTurn() {
         'div',
         { class: 'turn-main' },
         renderPublicTable(player),
-        renderActionDock(player),
+        h(
+          'div',
+          { class: 'mobile-bottom' },
+          renderActionDock(player),
+          renderMobileSheet(player, focus),
+        ),
         renderOwnStand(player),
       ),
       h('aside', { class: 'fiche-sidebar' }, renderSheet(player, { focus })),
@@ -1125,7 +1131,6 @@ function renderActionDock(player) {
         h('span', { class: 'dock-kicker', text: t('dock.kicker', { name: player.name }) }),
         h('strong', { text: prompt }),
       ),
-      h('button', { class: 'btn btn--ghost dock-fiche', type: 'button', onclick: openFiche }, t('dock.fiche')),
     ),
     ...content,
   );
@@ -1517,6 +1522,43 @@ function renderSheet(player, options = {}) {
       h('span', { class: 'muted small', text: t('sheet.clearNote') }),
     ),
     renderJournalDetails(),
+  );
+}
+
+function renderMobileSheet(player, focus) {
+  return h(
+    'section',
+    { class: `mobile-sheet${app.mobileSheetOpen ? ' is-open' : ''}` },
+    h(
+      'button',
+      {
+        class: 'mobile-sheet-handle',
+        type: 'button',
+        'aria-expanded': String(app.mobileSheetOpen),
+        'aria-controls': 'mobile-sheet-body',
+        onclick: () => {
+          app.mobileSheetOpen = !app.mobileSheetOpen;
+          render();
+        },
+      },
+      h('span', { class: 'mobile-sheet-grip', 'aria-hidden': 'true' }),
+      h('span', { class: 'mobile-sheet-title', text: t('dock.fiche') }),
+      h(
+        'span',
+        { class: 'mobile-sheet-hint' },
+        app.mobileSheetOpen ? t('sheet.collapse') : t('sheet.expand'),
+        h('span', {
+          class: 'mobile-sheet-caret',
+          'aria-hidden': 'true',
+          text: app.mobileSheetOpen ? '▾' : '▴',
+        }),
+      ),
+    ),
+    h(
+      'div',
+      { class: 'mobile-sheet-body', id: 'mobile-sheet-body' },
+      renderSheet(player, { focus, embedded: true }),
+    ),
   );
 }
 

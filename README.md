@@ -10,7 +10,7 @@ The site is published with GitHub Pages through GitHub Actions on every push to 
 
 The app acts as the neighbor who answers clues. Players pass the device around; everyone else looks away. **GOT FIVE!** can only be called during the active player's turn.
 
-The board and the deduction sheet are no longer separate tabs: the sheet stays visible in a side panel on desktop and opens as a drawer on mobile. Visible tiles and opponent stands are grouped in a public table. Actions appear in a contextual dock next to the selected tile, and a clue result highlights the relevant slot, comparison and sheet row. The five draft selectors only offer numbers that are still possible for each color and fill themselves when only one remains. Reveal buttons show how many tiles are left in each color.
+The board and the deduction sheet are no longer separate tabs: the sheet stays visible in a side panel on desktop and docks as a collapsible bottom sheet on mobile, above the action dock. Visible tiles and opponent stands are grouped in a public table. Actions appear in a contextual dock next to the selected tile, and a clue result highlights the relevant slot, comparison and sheet row. The five draft selectors only offer numbers that are still possible for each color and fill themselves when only one remains. Reveal buttons show how many tiles are left in each color.
 
 In **Solo vs AI**, the AI plays its turns automatically. It is a local solver with no network or LLM: it never sees its own numbers, keeps candidate numbers per color and only calls GOT FIVE! when a unique solution is consistent with its clues. Its turn screen is public and never shows a human stand.
 
