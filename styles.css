@@ -1613,6 +1613,53 @@ button.tile:hover {
   flex: 1 1 100%;
 }
 
+.review-ai-plan {
+  margin-top: 0.9rem;
+  padding: 0.8rem;
+  border: 1px solid rgba(242, 185, 75, 0.45);
+  border-radius: 12px;
+  background: rgba(242, 185, 75, 0.14);
+}
+
+.review-ai-plan .section-head {
+  margin: 0 0 0.2rem;
+}
+
+.review-ai-plan h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.review-ai-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0.45rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.review-ai-action {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.review-ai-step {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  color: var(--ink);
+  background: var(--accent-2);
+  font-size: 0.65rem;
+  font-weight: 900;
+}
+
 .review-section > .section-head {
   margin: 0;
 }

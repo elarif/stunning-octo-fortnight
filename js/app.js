@@ -1609,7 +1609,9 @@ function reviewSteps(game) {
     turn: entry.turn,
     initial: Boolean(entry.initial),
     final: false,
+    currentPlayer: Number.isInteger(entry.currentPlayer) ? entry.currentPlayer : null,
     publicTiles: entry.publicTiles.slice(),
+    supply: Array.isArray(entry.supply) ? entry.supply.slice() : null,
     players: entry.players.map((player) => ({
       id: player.id,
       sorting: player.sorting.map((group) => group.slice()),
@@ -1618,13 +1620,17 @@ function reviewSteps(game) {
       ),
       manual: player.manual.slice(),
       draft: player.draft.slice(),
+      eliminated: Boolean(player.eliminated),
+      hasClaimed: Boolean(player.hasClaimed),
     })),
   }));
   steps.push({
     turn: game.turn,
     initial: false,
     final: true,
+    currentPlayer: game.currentPlayer,
     publicTiles: game.publicTiles.slice(),
+    supply: game.supply.slice(),
     players: game.players.map((player) => ({
       id: player.id,
       sorting: player.sorting.map((group) => group.slice()),
@@ -1633,6 +1639,8 @@ function reviewSteps(game) {
       ),
       manual: player.manual.slice(),
       draft: player.draft.slice(),
+      eliminated: player.eliminated,
+      hasClaimed: player.hasClaimed,
     })),
   });
   return steps;
@@ -1642,6 +1650,8 @@ function reviewStepGame(game, step) {
   const copy = structuredClone(game);
   copy.publicTiles = step.publicTiles.slice();
   copy.turn = step.turn;
+  if (Array.isArray(step.supply)) copy.supply = step.supply.slice();
+  if (Number.isInteger(step.currentPlayer)) copy.currentPlayer = step.currentPlayer;
   copy.history = [];
   for (const player of copy.players) {
     const saved = step.players.find((entry) => entry.id === player.id);
@@ -1652,14 +1662,19 @@ function reviewStepGame(game, step) {
     );
     player.manual = saved.manual.slice();
     player.draft = saved.draft.slice();
+    player.eliminated = Boolean(saved.eliminated);
+    player.hasClaimed = Boolean(saved.hasClaimed);
   }
   return copy;
 }
 
-function reviewStepLabel(step) {
+function reviewStepLabel(step, game) {
   if (step.initial) return t('review.stepStart');
   if (step.final) return t('review.stepFinal');
-  return t('review.stepTurn', { n: step.turn });
+  const player = game.players.find((entry) => entry.id === step.currentPlayer);
+  return player
+    ? t('review.stepTurnPlayer', { n: step.turn, player: player.name })
+    : t('review.stepTurn', { n: step.turn });
 }
 
 function deductionReasonText(reason) {
@@ -1809,9 +1824,102 @@ function renderAiReviewSheet(stepGame, player) {
   );
 }
 
+function aiActionLabel(action, picked, player) {
+  if (action.type === 'claim') {
+    return t('review.aiActionClaim', { numbers: action.numbers.join(' · ') });
+  }
+  if (action.type === 'reveal') {
+    return t('review.aiActionReveal', {
+      color: colorName(COLORS[action.colorIndex]),
+    });
+  }
+  if (action.type === 'skipReveal') return t('review.aiActionSkip');
+  if (action.type === 'chooseTile') {
+    return t('review.aiActionTile', { tile: action.tile });
+  }
+  if (action.type === 'chooseClue') {
+    return t(action.clue === 'sort' ? 'review.aiActionSort' : 'review.aiActionCompare', {
+      tile: picked,
+    });
+  }
+  if (action.type === 'compareSlot') {
+    return t('review.aiActionSlot', {
+      ordinal: ordinal(action.slot + 1),
+      color: colorName(tile(picked).color),
+    });
+  }
+  if (action.type === 'endTurn') return t('review.aiActionEnd');
+  return action.type;
+}
+
+function analyzeAiTurn(game, steps, stepIndex, pov) {
+  const step = steps[stepIndex];
+  if (!step || step.final || step.currentPlayer !== pov.id) return null;
+  const startStep = step.initial ? step : steps[stepIndex - 1];
+  if (!startStep || !Array.isArray(startStep.supply)) return null;
+
+  try {
+    const startGame = reviewStepGame(game, startStep);
+    startGame.currentPlayer = pov.id;
+    startGame.turn = step.turn;
+    startGame.phase = PHASES.REVEAL;
+    startGame.revealed = null;
+    startGame.lastRevealed = null;
+    startGame.chosenTile = null;
+    startGame.clue = null;
+    startGame.winner = null;
+    startGame.winReason = null;
+    startGame.claims = [];
+
+    const actions = [];
+    let current = startGame;
+    for (let index = 0; index < 10; index += 1) {
+      const action = chooseBotAction(buildBotView(current, pov.id));
+      actions.push({ action, tile: current.chosenTile });
+      if (action.type === 'claim' || action.type === 'endTurn') break;
+      current = applyBotAction(current, action);
+      if (current.phase === PHASES.GAME_OVER) break;
+      if (current.currentPlayer !== pov.id) break;
+    }
+    return actions;
+  } catch {
+    return null;
+  }
+}
+
+function renderAiAlternative(actions, pov) {
+  return h(
+    'div',
+    { class: 'review-ai-plan' },
+    h(
+      'div',
+      { class: 'section-head' },
+      h('h3', { text: t('review.aiPlan') }),
+      h('span', { class: 'pill', text: t('common.ai') }),
+    ),
+    h('p', {
+      class: 'muted small',
+      text: t('review.aiPlanNote', { name: pov.name }),
+    }),
+    h(
+      'ol',
+      { class: 'review-ai-actions' },
+      actions.map(({ action, tile: picked }, index) =>
+        h(
+          'li',
+          { class: 'review-ai-action' },
+          h('span', { class: 'review-ai-step', text: String(index + 1) }),
+          h('span', { text: aiActionLabel(action, picked, pov) }),
+        ),
+      ),
+    ),
+  );
+}
+
 function renderReviewPov(game, steps, stepIndex, step, pov, stepGame) {
   const isBot = pov.kind === 'bot';
   const stepPlayer = stepGame.players.find((player) => player.id === pov.id);
+  const aiActions = analyzeAiTurn(game, steps, stepIndex, pov);
   const goToStep = (index) => {
     app.reviewStep = Math.max(0, Math.min(steps.length - 1, index));
     render();
@@ -1877,7 +1985,7 @@ function renderReviewPov(game, steps, stepIndex, step, pov, stepGame) {
       h(
         'div',
         { class: 'review-step-display' },
-        h('strong', { text: reviewStepLabel(step) }),
+        h('strong', { text: reviewStepLabel(step, game) }),
         h('span', {
           class: 'review-step-count',
           text: `${stepIndex + 1} / ${steps.length}`,
@@ -1917,6 +2025,7 @@ function renderReviewPov(game, steps, stepIndex, step, pov, stepGame) {
     isBot
       ? renderAiReviewSheet(stepGame, stepPlayer)
       : renderHumanReviewSheet(stepGame, stepPlayer),
+    aiActions ? renderAiAlternative(aiActions, pov) : null,
   );
 }
 

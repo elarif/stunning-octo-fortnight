@@ -22,7 +22,9 @@ function snapshot(state, initial = false) {
   return {
     turn: state.turn,
     initial,
+    currentPlayer: state.currentPlayer,
     publicTiles: state.publicTiles.slice(),
+    supply: state.supply.slice(),
     players: state.players.map((player) => ({
       id: player.id,
       sorting: player.sorting.map((group) => group.slice()),
@@ -31,6 +33,8 @@ function snapshot(state, initial = false) {
       ),
       manual: player.manual.slice(),
       draft: player.draft.slice(),
+      eliminated: player.eliminated,
+      hasClaimed: player.hasClaimed,
     })),
   };
 }
