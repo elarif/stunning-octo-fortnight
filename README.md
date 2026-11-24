@@ -16,7 +16,7 @@ In **Solo vs AI**, the AI plays its turns automatically. It is a local solver wi
 
 The interface, rules and game log are available in **French, English and Polish**. The browser language is used on first launch, then the choice is remembered. A flag dropdown (FR/EN/PL) is available on every screen.
 
-At the end of the game, **View final table** reveals every stand, each player's call and the full action log so mistakes can be compared.
+At the end of the game, **View final table** reveals every stand, each player's call and the full action log. A point-of-view selector and a step selector let you review the game from any player's perspective. At each step, the sheet shows that player's manual crosses and draft for a human, or the candidate numbers and elimination reasons for the AI. Turn history is recorded for games started with this version; older saves show the final sheet only.
 
 ## Run the game
 
@@ -63,6 +63,7 @@ When updating files, change `CACHE_NAME` in `sw.js` to force the cache to refres
 
 - **Privacy.** On a shared screen, privacy relies on players looking away. The full game state is stored in the browser: a curious player can inspect it with developer tools.
 - **Out-of-turn calls.** Deliberately not implemented: a player can call GOT FIVE! only during their turn.
+- **Review history.** Turn-by-turn history is recorded for games started with this version; saves created earlier only show the final sheet in the review.
 - **AI.** Solo 1v1 is implemented. Mixed human + AI games and 3–4 player games with AI are not offered yet.
 - **Network multiplayer.** Not included.
 - **Artwork.** No official Blue Orange graphic assets are reused. Unofficial version, for personal use.

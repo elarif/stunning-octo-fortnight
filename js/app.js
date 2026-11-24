@@ -15,7 +15,7 @@ import {
   skipReveal,
   visibleNumbersFor,
 } from './engine.js';
-import { buildBotView, chooseBotAction } from './bot.js';
+import { buildBotView, chooseBotAction, explainDeductions } from './bot.js';
 import {
   LANGUAGES,
   colorName,
@@ -52,6 +52,8 @@ const app = {
   updating: false,
   updateMessage: null,
   updateTimer: null,
+  reviewPov: null,
+  reviewStep: 0,
 };
 
 function appendChildren(node, children) {
@@ -1595,6 +1597,281 @@ function renderGameOver() {
   );
 }
 
+function reviewSteps(game) {
+  const history = Array.isArray(game.history) ? game.history : [];
+  const steps = history.map((entry) => ({
+    turn: entry.turn,
+    initial: Boolean(entry.initial),
+    final: false,
+    publicTiles: entry.publicTiles.slice(),
+    players: entry.players.map((player) => ({
+      id: player.id,
+      sorting: player.sorting.map((group) => group.slice()),
+      comparisons: player.comparisons.map((group) =>
+        group.map((clue) => ({ n: clue.n, same: clue.same })),
+      ),
+      manual: player.manual.slice(),
+      draft: player.draft.slice(),
+    })),
+  }));
+  steps.push({
+    turn: game.turn,
+    initial: false,
+    final: true,
+    publicTiles: game.publicTiles.slice(),
+    players: game.players.map((player) => ({
+      id: player.id,
+      sorting: player.sorting.map((group) => group.slice()),
+      comparisons: player.comparisons.map((group) =>
+        group.map((clue) => ({ n: clue.n, same: clue.same })),
+      ),
+      manual: player.manual.slice(),
+      draft: player.draft.slice(),
+    })),
+  });
+  return steps;
+}
+
+function reviewStepGame(game, step) {
+  const copy = structuredClone(game);
+  copy.publicTiles = step.publicTiles.slice();
+  copy.turn = step.turn;
+  copy.history = [];
+  for (const player of copy.players) {
+    const saved = step.players.find((entry) => entry.id === player.id);
+    if (!saved) continue;
+    player.sorting = saved.sorting.map((group) => group.slice());
+    player.comparisons = saved.comparisons.map((group) =>
+      group.map((clue) => ({ n: clue.n, same: clue.same })),
+    );
+    player.manual = saved.manual.slice();
+    player.draft = saved.draft.slice();
+  }
+  return copy;
+}
+
+function reviewStepLabel(step) {
+  if (step.initial) return t('review.stepStart');
+  if (step.final) return t('review.stepFinal');
+  return t('review.stepTurn', { n: step.turn });
+}
+
+function deductionReasonText(reason) {
+  const params = { ...(reason.params ?? {}) };
+  if (Number.isInteger(params.ordinal)) params.ordinal = ordinal(params.ordinal);
+  if (Number.isInteger(params.targetDots)) params.s = params.targetDots > 1 ? 's' : '';
+  return t(`deduction.${reason.key}`, params);
+}
+
+function reviewCell(n, color, options = {}) {
+  const { auto = false, manual = false, possible = false, eliminated = false } = options;
+  const classes = ['cell', 'review-cell'];
+  if (auto) classes.push('is-auto');
+  if (manual) classes.push('is-manual');
+  if (possible) classes.push('is-possible');
+  if (eliminated) classes.push('is-eliminated');
+
+  const cellTile = tile(n);
+  const vars = {
+    n,
+    color: colorName(color),
+    dots: cellTile.dots,
+    s: cellTile.dots > 1 ? 's' : '',
+  };
+  const label = eliminated
+    ? t('review.cellEliminated', vars)
+    : possible
+      ? t('review.cellPossible', vars)
+      : t('sheet.cellAria', {
+          ...vars,
+          auto: auto ? t('sheet.auto') : '',
+        });
+
+  return h(
+    'span',
+    {
+      class: classes.join(' '),
+      style: { '--cell-bg': color.hex, '--cell-ink': color.ink },
+      'aria-label': label,
+    },
+    h('span', { class: 'cell-num', text: String(n) }),
+    dotsEl(cellTile.dots),
+  );
+}
+
+function renderHumanReviewSheet(stepGame, player) {
+  const visible = visibleNumbersFor(stepGame, player.id);
+  const draft = h(
+    'div',
+    { class: 'draft-block review-draft-block' },
+    h('h3', { class: 'subtitle', text: t('sheet.draft') }),
+    h(
+      'div',
+      { class: 'draft-row review-draft-row' },
+      Array.from({ length: 5 }, (_, index) => {
+        const color = tile(player.stand[index]).color;
+        return h(
+          'span',
+          {
+            class: 'review-draft',
+            style: { '--draft-color': color.hex },
+            'aria-label': t('sheet.draftAria', {
+              ordinal: ordinal(index + 1),
+              color: colorName(color),
+            }),
+          },
+          player.draft[index] || t('sheet.none'),
+        );
+      }),
+    ),
+  );
+
+  const rows = COLORS.map((color, colorIndex) =>
+    h(
+      'div',
+      { class: 'sheet-row' },
+      h(
+        'div',
+        { class: 'sheet-cells' },
+        tilesForColor(colorIndex).map((cellTile) =>
+          reviewCell(cellTile.n, color, {
+            auto: visible.has(cellTile.n),
+            manual: player.manual.includes(cellTile.n),
+          }),
+        ),
+      ),
+    ),
+  );
+
+  return h(
+    'div',
+    { class: 'review-sheet' },
+    draft,
+    h('div', { class: 'sheet-grid' }, rows),
+  );
+}
+
+function renderAiReviewSheet(stepGame, player) {
+  const sheet = explainDeductions(stepGame, player.id);
+
+  return h(
+    'div',
+    { class: 'review-sheet' },
+    h(
+      'div',
+      { class: 'sheet-grid' },
+      sheet.map((slot) => {
+        const color = COLORS[slot.colorIndex];
+        const candidates = new Set(slot.candidates);
+        return h(
+          'div',
+          { class: 'sheet-row' },
+          h(
+            'div',
+            { class: 'sheet-cells' },
+            tilesForColor(slot.colorIndex).map((cellTile) => {
+              const possible = candidates.has(cellTile.n);
+              return reviewCell(cellTile.n, color, {
+                possible,
+                eliminated: !possible,
+              });
+            }),
+          ),
+          slot.eliminated.length
+            ? h(
+                'ul',
+                { class: 'review-reasons' },
+                slot.eliminated.map((group) =>
+                  h(
+                    'li',
+                    { class: 'review-reason' },
+                    h('span', {
+                      class: 'review-reason-numbers',
+                      text: group.numbers.join(', '),
+                    }),
+                    h('span', {
+                      class: 'review-reason-text',
+                      text: deductionReasonText(group.reason),
+                    }),
+                  ),
+                ),
+              )
+            : null,
+        );
+      }),
+    ),
+  );
+}
+
+function renderReviewPov(game, steps, stepIndex, step, pov, stepGame) {
+  const isBot = pov.kind === 'bot';
+  const stepPlayer = stepGame.players.find((player) => player.id === pov.id);
+
+  return h(
+    'section',
+    { class: 'card review-pov-card' },
+    h(
+      'div',
+      { class: 'section-head' },
+      h('h2', { text: t('review.pov') }),
+      h('span', { class: 'pill', text: reviewStepLabel(step) }),
+    ),
+    h(
+      'div',
+      { class: 'review-pov' },
+      game.players.map((player) => {
+        const details = [player.kind === 'bot' ? t('common.ai') : t('common.human')];
+        if (player.eliminated) details.push(t('common.eliminated'));
+        return h(
+          'button',
+          {
+            class: `segment review-pov-btn${player.id === pov.id ? ' is-active' : ''}`,
+            type: 'button',
+            'aria-pressed': String(player.id === pov.id),
+            onclick: () => {
+              app.reviewPov = player.id;
+              render();
+            },
+          },
+          h('span', { class: 'review-pov-name', text: player.name }),
+          h('span', { class: 'review-pov-kind', text: details.join(' · ') }),
+        );
+      }),
+    ),
+    h(
+      'label',
+      { class: 'review-step' },
+      h('span', { class: 'field-label', text: t('review.step') }),
+      h(
+        'select',
+        {
+          class: 'text-input',
+          onchange: (event) => {
+            app.reviewStep = Number(event.target.value);
+            render();
+          },
+        },
+        steps.map((entry, index) =>
+          h(
+            'option',
+            { value: String(index), selected: index === stepIndex },
+            reviewStepLabel(entry),
+          ),
+        ),
+      ),
+    ),
+    h(
+      'div',
+      { class: 'review-sheet-head' },
+      h('h3', { text: t('review.sheetTitle', { name: pov.name }) }),
+      h('span', { class: 'muted small', text: isBot ? t('common.ai') : t('common.human') }),
+    ),
+    isBot
+      ? renderAiReviewSheet(stepGame, stepPlayer)
+      : renderHumanReviewSheet(stepGame, stepPlayer),
+  );
+}
+
 function openReview() {
   if (!app.game || app.game.phase !== PHASES.GAME_OVER) return;
   clearBotTimer();
@@ -1602,6 +1879,9 @@ function openReview() {
   app.privacy = false;
   app.claimOpen = false;
   app.ficheOpen = false;
+  const steps = reviewSteps(app.game);
+  app.reviewStep = steps.length - 1;
+  app.reviewPov = app.game.winner ?? app.game.players[0]?.id ?? null;
   render();
 }
 
@@ -1645,6 +1925,16 @@ function renderReview() {
   const game = app.game;
   if (!game) return renderHome();
   const { winner, title, subtitle } = gameOverSummary(game);
+  const steps = reviewSteps(game);
+  const stepIndex = Math.max(
+    0,
+    Math.min(steps.length - 1, app.reviewStep ?? steps.length - 1),
+  );
+  app.reviewStep = stepIndex;
+  const step = steps[stepIndex];
+  const pov = game.players.find((player) => player.id === app.reviewPov) ?? game.players[0];
+  app.reviewPov = pov.id;
+  const stepGame = reviewStepGame(game, step);
 
   return h(
     'main',
@@ -1661,6 +1951,7 @@ function renderReview() {
       subtitle ? h('p', { class: 'muted', text: subtitle }) : null,
       h('p', { class: 'muted small' }, t('review.note')),
     ),
+    renderReviewPov(game, steps, stepIndex, step, pov, stepGame),
     h(
       'section',
       { class: 'review-section' },

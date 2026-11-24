@@ -89,6 +89,108 @@ export function enumerateSolutions(view, limit = ACTION_LIMIT) {
   return solutions;
 }
 
+function reasonId(reason) {
+  return `${reason.key}:${JSON.stringify(reason.params ?? {})}`;
+}
+
+export function explainDeductions(game, playerId) {
+  const view = buildBotView(game, playerId);
+  const allNumbers = view.slotColors.map((colorIndex) =>
+    TILES.filter((candidate) => candidate.colorIndex === colorIndex).map(
+      (candidate) => candidate.n,
+    ),
+  );
+  const candidates = allNumbers.map((numbers) => numbers.slice());
+  const groups = view.slotColors.map(() => new Map());
+
+  const eliminate = (slot, n, why) => {
+    if (!candidates[slot].includes(n)) return;
+    candidates[slot] = candidates[slot].filter((value) => value !== n);
+    const id = reasonId(why);
+    const group = groups[slot].get(id) ?? { reason: why, numbers: [] };
+    group.numbers.push(n);
+    groups[slot].set(id, group);
+  };
+
+  for (let slot = 0; slot < 5; slot += 1) {
+    for (const n of allNumbers[slot]) {
+      if (view.visibleNumbers.has(n)) {
+        eliminate(slot, n, { key: 'visible', params: {} });
+      }
+    }
+  }
+
+  for (let notch = 0; notch < 6; notch += 1) {
+    for (const clueTile of view.sorting[notch]) {
+      for (let slot = 0; slot < 5; slot += 1) {
+        const lower = slot < notch;
+        const why = {
+          key: lower ? 'sortLower' : 'sortHigher',
+          params: { tile: clueTile, ordinal: slot + 1 },
+        };
+        for (const n of [...candidates[slot]]) {
+          if (lower ? n >= clueTile : n <= clueTile) eliminate(slot, n, why);
+        }
+      }
+    }
+  }
+
+  for (let slot = 0; slot < 5; slot += 1) {
+    for (const clue of view.comparisons[slot]) {
+      const targetDots = tile(clue.n).dots;
+      for (const n of [...candidates[slot]]) {
+        const sameDots = tile(n).dots === targetDots;
+        if (sameDots !== clue.same) {
+          eliminate(slot, n, {
+            key: clue.same ? 'compareSame' : 'compareDifferent',
+            params: { tile: clue.n, ordinal: slot + 1, targetDots },
+          });
+        }
+      }
+    }
+  }
+
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (let slot = 0; slot < 5; slot += 1) {
+      for (const n of [...candidates[slot]]) {
+        const hasPrevious = slot === 0 || candidates[slot - 1].some((value) => value < n);
+        const hasNext = slot === 4 || candidates[slot + 1].some((value) => value > n);
+        if (!hasPrevious || !hasNext) {
+          eliminate(slot, n, {
+            key: hasPrevious ? 'orderAfter' : 'orderBefore',
+            params: { ordinal: slot + 1 },
+          });
+          changed = true;
+        }
+      }
+    }
+  }
+
+  const solverCandidates = computeCandidates(view);
+  return view.slotColors.map((colorIndex, slot) => {
+    const remaining = new Set(solverCandidates[slot]);
+    const eliminated = [...groups[slot].values()]
+      .map((group) => ({
+        reason: group.reason,
+        numbers: group.numbers.filter((n) => !remaining.has(n)),
+      }))
+      .filter((group) => group.numbers.length > 0);
+    const explained = new Set(eliminated.flatMap((group) => group.numbers));
+    const unexplained = allNumbers[slot].filter(
+      (n) => !remaining.has(n) && !explained.has(n),
+    );
+    if (unexplained.length > 0) {
+      eliminated.push({
+        reason: { key: 'incompatible', params: {} },
+        numbers: unexplained,
+      });
+    }
+    return { colorIndex, candidates: solverCandidates[slot], eliminated };
+  });
+}
+
 function expectedRemaining(solutions, outcomeFor) {
   if (solutions.length === 0) return Number.POSITIVE_INFINITY;
   const groups = new Map();

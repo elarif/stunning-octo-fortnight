@@ -22,6 +22,7 @@ export function saveGame(game) {
 
 function normalizeGame(game) {
   if (!Array.isArray(game.claims)) game.claims = [];
+  if (!Array.isArray(game.history)) game.history = [];
   for (const player of game.players) {
     if (!player.kind) player.kind = 'human';
     if (!Array.isArray(player.standColors) && Array.isArray(player.stand)) {

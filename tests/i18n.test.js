@@ -31,6 +31,18 @@ function usedKeys() {
   ]) {
     keys.add(`log.${key}`);
   }
+  for (const key of [
+    'visible',
+    'sortLower',
+    'sortHigher',
+    'compareSame',
+    'compareDifferent',
+    'orderBefore',
+    'orderAfter',
+    'incompatible',
+  ]) {
+    keys.add(`deduction.${key}`);
+  }
 
   return keys;
 }

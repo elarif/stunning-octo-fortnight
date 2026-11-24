@@ -18,6 +18,23 @@ function addLog(state, key, params = {}, type = 'info') {
   state.log.push({ turn: state.turn, key, params, type });
 }
 
+function snapshot(state, initial = false) {
+  return {
+    turn: state.turn,
+    initial,
+    publicTiles: state.publicTiles.slice(),
+    players: state.players.map((player) => ({
+      id: player.id,
+      sorting: player.sorting.map((group) => group.slice()),
+      comparisons: player.comparisons.map((group) =>
+        group.map((clue) => ({ n: clue.n, same: clue.same })),
+      ),
+      manual: player.manual.slice(),
+      draft: player.draft.slice(),
+    })),
+  };
+}
+
 function resetTurnFields(state) {
   state.revealed = null;
   state.lastRevealed = null;
@@ -161,8 +178,10 @@ export function createGame({ names, kinds, seed = 0, startingPlayer = 0 }) {
     winReason: null,
     claims: [],
     log: [],
+    history: [],
   };
   addLog(state, 'setup', { player: players[safeStart].name }, 'setup');
+  state.history.push(snapshot(state, true));
   return state;
 }
 
@@ -278,6 +297,7 @@ export function chooseCompareSlot(state, slotIndex) {
 export function endTurn(state) {
   if (state.phase !== PHASES.END) throw new Error('Le tour ne peut pas encore se terminer.');
   const next = clone(state);
+  next.history.push(snapshot(next));
   resetTurnFields(next);
   next.currentPlayer = nextActiveIndex(next, next.currentPlayer);
   next.turn += 1;
@@ -332,6 +352,7 @@ export function claim(state, numbers) {
     return next;
   }
 
+  next.history.push(snapshot(next));
   resetTurnFields(next);
   next.currentPlayer = nextActiveIndex(next, next.currentPlayer);
   next.turn += 1;

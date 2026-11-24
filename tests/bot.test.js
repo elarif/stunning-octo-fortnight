@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { COLORS, tile } from '../js/tiles.js';
+import { COLORS, TILES, tile } from '../js/tiles.js';
 import {
   PHASES,
   chooseClue,
@@ -19,6 +19,7 @@ import {
   chooseBotAction,
   computeCandidates,
   enumerateSolutions,
+  explainDeductions,
 } from '../js/bot.js';
 
 function applyAction(game, action) {
@@ -142,5 +143,69 @@ test('les candidats excluent les numéros visibles et les indices posés', () =>
       candidates[slot].every((n) => tile(n).colorIndex === view.slotColors[slot]),
       true,
     );
+  }
+});
+
+test('explainDeductions partitionne les numéros et suit les candidats du solveur', () => {
+  for (const seed of [3, 11, 27]) {
+    const game = createGame({
+      names: ['IA 1', 'IA 2'],
+      kinds: ['bot', 'bot'],
+      seed,
+    });
+    const sheet = explainDeductions(game, 0);
+    const expected = computeCandidates(buildBotView(game, 0));
+
+    sheet.forEach((slot, index) => {
+      assert.deepEqual(slot.candidates, expected[index]);
+      const allNumbers = TILES.filter(
+        (candidate) => candidate.colorIndex === slot.colorIndex,
+      ).map((candidate) => candidate.n);
+      const eliminated = slot.eliminated.flatMap((group) => group.numbers);
+      assert.equal(new Set(eliminated).size, eliminated.length);
+      assert.deepEqual(
+        [...slot.candidates, ...eliminated].sort((a, b) => a - b),
+        allNumbers.sort((a, b) => a - b),
+      );
+      for (const group of slot.eliminated) {
+        assert.ok(group.numbers.length > 0);
+        assert.equal(typeof group.reason.key, 'string');
+      }
+    });
+  }
+});
+
+test('explainDeductions explique les classements et les comparaisons', () => {
+  const game = createGame({
+    names: ['IA 1', 'IA 2'],
+    kinds: ['bot', 'bot'],
+    seed: 9,
+  });
+  const player = game.players[0];
+  const sortTile = game.publicTiles[0];
+  player.sorting[2].push(sortTile);
+  const compareTile = game.publicTiles[1];
+  player.comparisons[0].push({ n: compareTile, same: true });
+
+  const sheet = explainDeductions(game, 0);
+  const sortGroups = sheet
+    .flatMap((slot) => slot.eliminated)
+    .filter((group) => group.reason.key.startsWith('sort'));
+  assert.ok(sortGroups.length > 0);
+  for (const group of sortGroups) {
+    assert.equal(group.reason.params.tile, sortTile);
+    for (const n of group.numbers) {
+      if (group.reason.key === 'sortLower') assert.ok(n >= sortTile);
+      else assert.ok(n <= sortTile);
+    }
+  }
+
+  const compareGroup = sheet[0].eliminated.find(
+    (group) => group.reason.key === 'compareSame',
+  );
+  assert.ok(compareGroup);
+  const targetDots = tile(compareTile).dots;
+  for (const n of compareGroup.numbers) {
+    assert.notEqual(tile(n).dots, targetDots);
   }
 });

@@ -356,3 +356,26 @@ test('réserve et tuiles visibles vides : le tour peut se terminer', () => {
   assert.throws(() => endTurn({ ...game, phase: PHASES.REVEAL }));
   assert.equal(endTurn(next).phase, PHASES.REVEAL);
 });
+
+test('l’historique enregistre le début et la fin de chaque tour', () => {
+  let game = makeGame(2, 5);
+  assert.equal(game.history.length, 1);
+  assert.equal(game.history[0].initial, true);
+  assert.equal(game.history[0].turn, 1);
+  assert.equal(game.history[0].players.every((player) => player.manual.length === 0), true);
+
+  const colorIndex = canRevealColors(game).findIndex(Boolean);
+  game = reveal(game, colorIndex);
+  const clueTile = game.publicTiles[0];
+  game = chooseTile(game, clueTile);
+  game = chooseClue(game, 'sort');
+  const endedTurn = game.turn;
+  game = endTurn(game);
+
+  assert.equal(game.history.length, 2);
+  const snapshot = game.history[1];
+  assert.equal(snapshot.initial, false);
+  assert.equal(snapshot.turn, endedTurn);
+  assert.equal(snapshot.publicTiles.includes(clueTile), false);
+  assert.equal(snapshot.players.length, 2);
+});
