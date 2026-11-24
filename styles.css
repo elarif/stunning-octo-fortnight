@@ -794,12 +794,27 @@ button.tile:hover {
   box-shadow: 0 0 0 4px rgba(242, 185, 75, 0.2), var(--shadow);
 }
 
+.stand-order {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0.75rem 0 0.2rem;
+}
+
+.stand-order-sign {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 1.35rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
 .own-stand {
   display: grid;
+  flex: 1;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
   align-items: start;
-  margin: 0.75rem 0 0.2rem;
 }
 
 .own-slot {
@@ -2092,6 +2107,14 @@ button.tile:hover {
 
   .own-stand {
     gap: 4px;
+  }
+
+  .stand-order {
+    gap: 4px;
+  }
+
+  .stand-order-sign {
+    font-size: 1.1rem;
   }
 
   .own-slot {
