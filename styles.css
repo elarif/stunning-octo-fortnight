@@ -1125,14 +1125,18 @@ button.tile:hover {
   max-width: 420px;
 }
 
-.draft-claim-row {
+.draft-line {
   display: flex;
-  justify-content: flex-end;
-  margin-top: 0.7rem;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.draft-line .draft-row {
+  flex: 0 1 420px;
 }
 
 .draft-claim {
-  width: min(100%, 420px);
+  flex: 0 0 auto;
 }
 
 .draft-select {
@@ -1769,6 +1773,21 @@ button.tile:hover {
   .turn-header-main {
     align-items: center;
     gap: 8px;
+  }
+
+  .draft-line {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
+  }
+
+  .draft-line .draft-row {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+
+  .draft-claim {
+    width: 100%;
   }
 
   .fiche-modal {

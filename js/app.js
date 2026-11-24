@@ -1492,12 +1492,12 @@ function renderSheet(player, options = {}) {
     context,
     h('div', { class: 'draft-block' },
       h('h3', { class: 'subtitle', text: t('sheet.draft') }),
-      draft,
-      claimable
-        ? h(
-            'div',
-            { class: 'draft-claim-row' },
-            h(
+      h(
+        'div',
+        { class: 'draft-line' },
+        draft,
+        claimable
+          ? h(
               'button',
               {
                 class: 'btn btn--claim draft-claim',
@@ -1507,9 +1507,9 @@ function renderSheet(player, options = {}) {
                   !draftComplete(player) || player.eliminated || player.hasClaimed,
               },
               t('common.gotFive'),
-            ),
-          )
-        : null,
+            )
+          : null,
+      ),
     ),
     h('div', { class: 'sheet-grid' }, rows),
     h('div', { class: 'sheet-actions' },
