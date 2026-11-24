@@ -1170,7 +1170,7 @@ button.tile:hover {
 
 .sheet-row {
   display: grid;
-  grid-template-columns: 30px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
   align-items: center;
   border-radius: 10px;
@@ -1180,30 +1180,6 @@ button.tile:hover {
 .sheet-row.is-focus {
   background: rgba(242, 185, 75, 0.2);
   box-shadow: inset 3px 0 0 var(--accent-2);
-}
-
-.sheet-row-label {
-  position: sticky;
-  left: 0;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2px 0;
-  color: var(--ink);
-  background: var(--card);
-  font-size: 0.73rem;
-  font-weight: 800;
-}
-
-.row-swatch {
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  font-size: 0.64rem;
-  font-weight: 900;
 }
 
 .sheet-cells {
@@ -1233,7 +1209,7 @@ button.tile:hover {
 }
 
 .cell-num {
-  font-size: 0.8rem;
+  font-size: 1rem;
   font-weight: 900;
   line-height: 1;
 }
@@ -1795,10 +1771,6 @@ button.tile:hover {
     gap: 8px;
   }
 
-  .sheet-row {
-    grid-template-columns: 30px minmax(0, 1fr);
-  }
-
   .fiche-modal {
     width: 100%;
     max-height: 92dvh;
@@ -1827,12 +1799,13 @@ button.tile:hover {
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 
-  .sheet-row {
-    grid-template-columns: 30px minmax(0, 1fr);
+  .fiche-modal {
+    width: 100%;
+    max-height: 92dvh;
   }
 
-  .cell-num {
-    font-size: 0.78rem;
+  .fiche-modal-inner {
+    max-height: 92dvh;
   }
 }
 
@@ -1936,22 +1909,8 @@ button.tile:hover {
     padding: 0.2rem;
   }
 
-  .sheet-row {
-    grid-template-columns: 30px minmax(0, 1fr);
-    gap: 5px;
-  }
-
-  .row-swatch {
-    width: 19px;
-    height: 19px;
-  }
-
   .cell {
     min-height: 34px;
-  }
-
-  .cell-num {
-    font-size: 0.72rem;
   }
 
   .claim-inputs {

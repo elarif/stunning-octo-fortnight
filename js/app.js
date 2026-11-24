@@ -1435,9 +1435,6 @@ function renderSheet(player, options = {}) {
     return h(
       'div',
       { class: `sheet-row${isFocus ? ' is-focus' : ''}` },
-      h('div', { class: 'sheet-row-label', 'aria-label': colorName(color), title: colorName(color) },
-        h('span', { class: 'row-swatch', style: { background: color.hex, color: color.ink }, text: color.symbol }),
-      ),
       h(
         'div',
         { class: 'sheet-cells' },
