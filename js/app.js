@@ -1806,6 +1806,10 @@ function renderAiReviewSheet(stepGame, player) {
 function renderReviewPov(game, steps, stepIndex, step, pov, stepGame) {
   const isBot = pov.kind === 'bot';
   const stepPlayer = stepGame.players.find((player) => player.id === pov.id);
+  const goToStep = (index) => {
+    app.reviewStep = Math.max(0, Math.min(steps.length - 1, index));
+    render();
+  };
 
   return h(
     'section',
@@ -1814,7 +1818,6 @@ function renderReviewPov(game, steps, stepIndex, step, pov, stepGame) {
       'div',
       { class: 'section-head' },
       h('h2', { text: t('review.pov') }),
-      h('span', { class: 'pill', text: reviewStepLabel(step) }),
     ),
     h(
       'div',
@@ -1839,25 +1842,64 @@ function renderReviewPov(game, steps, stepIndex, step, pov, stepGame) {
       }),
     ),
     h(
-      'label',
-      { class: 'review-step' },
-      h('span', { class: 'field-label', text: t('review.step') }),
+      'div',
+      { class: 'review-player-control', role: 'group', 'aria-label': t('review.step') },
       h(
-        'select',
+        'button',
         {
-          class: 'text-input',
-          onchange: (event) => {
-            app.reviewStep = Number(event.target.value);
-            render();
-          },
+          class: 'review-step-btn',
+          type: 'button',
+          disabled: stepIndex === 0,
+          'aria-label': t('review.firstStep'),
+          title: t('review.firstStep'),
+          onclick: () => goToStep(0),
         },
-        steps.map((entry, index) =>
-          h(
-            'option',
-            { value: String(index), selected: index === stepIndex },
-            reviewStepLabel(entry),
-          ),
-        ),
+        '«',
+      ),
+      h(
+        'button',
+        {
+          class: 'review-step-btn',
+          type: 'button',
+          disabled: stepIndex === 0,
+          'aria-label': t('review.previousStep'),
+          title: t('review.previousStep'),
+          onclick: () => goToStep(stepIndex - 1),
+        },
+        '‹',
+      ),
+      h(
+        'div',
+        { class: 'review-step-display' },
+        h('strong', { text: reviewStepLabel(step) }),
+        h('span', {
+          class: 'review-step-count',
+          text: `${stepIndex + 1} / ${steps.length}`,
+        }),
+      ),
+      h(
+        'button',
+        {
+          class: 'review-step-btn',
+          type: 'button',
+          disabled: stepIndex === steps.length - 1,
+          'aria-label': t('review.nextStep'),
+          title: t('review.nextStep'),
+          onclick: () => goToStep(stepIndex + 1),
+        },
+        '›',
+      ),
+      h(
+        'button',
+        {
+          class: 'review-step-btn',
+          type: 'button',
+          disabled: stepIndex === steps.length - 1,
+          'aria-label': t('review.lastStep'),
+          title: t('review.lastStep'),
+          onclick: () => goToStep(steps.length - 1),
+        },
+        '»',
       ),
     ),
     h(
