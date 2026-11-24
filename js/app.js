@@ -972,8 +972,8 @@ function renderTurn() {
     h(
       'div',
       { class: 'turn-content' },
-      renderPublicTable(player),
       renderActionDock(player),
+      renderPublicTable(player),
       renderOwnStand(player),
       renderSheet(player, { focus, claimable: true }),
       renderJournalSection(),
