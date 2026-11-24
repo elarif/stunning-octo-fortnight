@@ -1881,6 +1881,8 @@ function render() {
   else view = renderHome();
 
   root.append(view);
+  const touch = window.matchMedia?.('(pointer: coarse)')?.matches ?? false;
+  const updateHint = t(touch ? 'common.updateHintTouch' : 'common.updateHint');
   root.append(
     h(
       'footer',
@@ -1890,11 +1892,11 @@ function render() {
         {
           class: 'version-button',
           type: 'button',
-          title: t('common.updateHint'),
-          'aria-label': `${t('common.commit', { sha: COMMIT })} — ${t('common.updateHint')}`,
+          title: updateHint,
+          'aria-label': `${t('common.commit', { sha: COMMIT })} — ${updateHint}`,
           disabled: app.updating,
           onclick: (event) => {
-            if (event.detail === 0) downloadLatestVersion();
+            if (event.detail === 0 || touch) downloadLatestVersion();
           },
           ondblclick: downloadLatestVersion,
         },
@@ -1973,7 +1975,7 @@ async function downloadLatestVersion() {
 function registerServiceWorker() {
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js').catch((error) => {
+      navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch((error) => {
         console.warn('Service worker non enregistré :', error);
       });
     });

@@ -160,6 +160,12 @@ summary:focus-visible {
   opacity: 0.65;
 }
 
+@media (pointer: coarse) {
+  .version-button {
+    padding: 0.35rem 0.5rem;
+  }
+}
+
 .version-status {
   color: rgba(255, 250, 242, 0.72);
   font-family: var(--font);

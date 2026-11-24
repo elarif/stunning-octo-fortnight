@@ -6,7 +6,7 @@ Unofficial web version of the deduction game **Got Five!**, playable **offline**
 
 **<https://elarif.github.io/stunning-octo-fortnight/>**
 
-The site is published with GitHub Pages through GitHub Actions on every push to `main`. The workflow injects the short commit SHA into `js/version.js` and displays it at the bottom of every screen. Double-click the commit hash to check for and download the latest deployed version. The site is installable as a PWA and works offline after the first load.
+The site is published with GitHub Pages through GitHub Actions on every push to `main`. The workflow injects the short commit SHA into `js/version.js` and displays it at the bottom of every screen. Double-click the commit hash, or tap it on a touch device, to check for and download the latest deployed version. The site is installable as a PWA and works offline after the first load.
 
 The app acts as the neighbor who answers clues. Players pass the device around; everyone else looks away. **GOT FIVE!** can only be called during the active player's turn.
 

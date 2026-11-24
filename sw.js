@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gotfive-v23';
+const CACHE_NAME = 'gotfive-v24';
 const ASSETS = [
   './',
   './index.html',
@@ -22,10 +22,13 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
+  const requests = ASSETS.map(
+    (asset) => new Request(new URL(asset, self.location.href), { cache: 'reload' }),
+  );
   event.waitUntil(
     caches
       .open(CACHE_NAME)
-      .then((cache) => cache.addAll(ASSETS))
+      .then((cache) => cache.addAll(requests))
       .then(() => self.skipWaiting()),
   );
 });
@@ -49,21 +52,24 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
 
   event.respondWith(
-    caches.match(request).then((cached) => {
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
+      const cached = await cache.match(request);
       if (cached) return cached;
-      return fetch(request)
-        .then((response) => {
-          if (!response || response.status !== 200 || response.type === 'opaque') {
-            return response;
-          }
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+
+      try {
+        const response = await fetch(request);
+        if (!response || response.status !== 200 || response.type === 'opaque') {
           return response;
-        })
-        .catch(() => {
-          if (request.mode === 'navigate') return caches.match('./index.html');
-          return caches.match(request);
-        });
-    }),
+        }
+        await cache.put(request, response.clone());
+        return response;
+      } catch {
+        if (request.mode === 'navigate') {
+          return (await cache.match('./index.html')) ?? Response.error();
+        }
+        return (await cache.match(request)) ?? Response.error();
+      }
+    })(),
   );
 });
