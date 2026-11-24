@@ -822,29 +822,6 @@ button.tile:hover {
   background: rgba(242, 185, 75, 0.16);
 }
 
-.own-slot-body {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.slot-index {
-  color: var(--muted);
-  font-size: 0.68rem;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.slot-color {
-  color: var(--muted);
-  font-size: 0.7rem;
-  font-weight: 700;
-  line-height: 1.1;
-  text-align: center;
-  overflow-wrap: anywhere;
-}
-
 .own-section {
   margin-top: 0.9rem;
   padding-top: 0.85rem;
@@ -1910,10 +1887,6 @@ button.tile:hover {
 
   .color-name {
     font-size: 0.64rem;
-  }
-
-  .slot-color {
-    font-size: 0.6rem;
   }
 
   .clue-buttons {

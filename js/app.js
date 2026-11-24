@@ -1217,7 +1217,7 @@ function renderSortingZone(player, compact = false, current = null) {
   );
 }
 
-function renderComparisonRow(player, compact = false, current = null) {
+function renderComparisonRow(player, compact = false, current = null, labels = true) {
   return h(
     'div',
     { class: `comparison-row${compact ? ' comparison-row--compact' : ''}` },
@@ -1226,7 +1226,7 @@ function renderComparisonRow(player, compact = false, current = null) {
       return h(
         'div',
         { class: `compare-slot${isCurrent ? ' is-current' : ''}` },
-        h('span', { class: 'notch-label', text: ordinal(slot + 1) }),
+        labels ? h('span', { class: 'notch-label', text: ordinal(slot + 1) }) : null,
         h(
           'div',
           { class: 'compare-tiles' },
@@ -1254,13 +1254,6 @@ function renderOwnStand(player) {
 
   const slots = player.stand.map((n, index) => {
     const color = tile(n).color;
-    const body = h(
-      'div',
-      { class: 'own-slot-body' },
-      h('span', { class: 'slot-index', text: ordinal(index + 1) }),
-      backTile(color),
-      h('span', { class: 'slot-color' }, h('span', { text: color.symbol }), ` ${colorName(color)}`),
-    );
     if (compareMode) {
       return h(
         'button',
@@ -1273,13 +1266,13 @@ function renderOwnStand(player) {
           }),
           onclick: () => doChooseCompareSlot(index),
         },
-        body,
+        backTile(color),
       );
     }
     return h(
       'div',
       { class: `own-slot${targetSlot === index ? ' is-target' : ''}` },
-      body,
+      backTile(color),
     );
   });
 
@@ -1293,13 +1286,11 @@ function renderOwnStand(player) {
       ),
     ),
     h('div', { class: 'own-section' },
-      h('h3', { class: 'subtitle', text: t('stand.sorting') }),
       renderSortingZone(player, false, clue),
     ),
     h('div', { class: 'own-stand' }, slots),
     h('div', { class: 'own-section' },
-      h('h3', { class: 'subtitle', text: t('stand.comparisons') }),
-      renderComparisonRow(player, false, clue),
+      renderComparisonRow(player, false, clue, false),
     ),
   );
 }
