@@ -4332,3 +4332,26 @@ button.tile:hover {
     height: 3px;
   }
 }
+
+@media (min-width: 760px) {
+  .gf-turn .tile--lg {
+    width: 73px;
+    height: 66px;
+  }
+
+  .gf-add-tile {
+    width: 73px;
+    height: 66px;
+  }
+
+  .gf-fiche-row {
+    grid-template-columns: 10px repeat(12, minmax(0, 1fr));
+    gap: 6px;
+    justify-content: initial;
+  }
+
+  .gf-cell {
+    width: auto;
+    min-height: 66px;
+  }
+}
