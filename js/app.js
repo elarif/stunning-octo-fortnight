@@ -528,6 +528,7 @@ function selectPublicTile(n) {
 function clearSelectedTile() {
   app.selectedTile = null;
   render();
+  focusSelector('.gf-visible-row .tile');
 }
 
 function doChooseClue(type) {
@@ -547,6 +548,7 @@ function doChooseClue(type) {
     app.notice = null;
     persist();
     render();
+    focusSelector('.gf-end-turn, .gf-gotfive');
   } catch (error) {
     app.notice = error.message;
     render();
@@ -564,6 +566,7 @@ function doCancelClue() {
     app.notice = null;
     persist();
     render();
+    focusSelector('.gf-visible-row .tile');
   } catch (error) {
     app.notice = error.message;
     render();
@@ -575,6 +578,7 @@ function doChooseCompareSlot(slot) {
   app.revealOpen = false;
   app.draftSlot = null;
   runAction((game) => chooseCompareSlot(game, slot));
+  focusSelector('.gf-end-turn, .gf-gotfive');
 }
 
 function openFiche() {
@@ -603,6 +607,10 @@ function doEndTurn() {
   }
 }
 
+function focusSelector(selector) {
+  requestAnimationFrame(() => document.querySelector(selector)?.focus());
+}
+
 function openMenu() {
   app.menuOpen = true;
   app.revealOpen = false;
@@ -613,6 +621,7 @@ function openMenu() {
 function closeMenu() {
   app.menuOpen = false;
   render();
+  focusSelector('.gf-menu-btn');
 }
 
 function openReveal() {
@@ -626,6 +635,7 @@ function openReveal() {
 function closeReveal() {
   app.revealOpen = false;
   render();
+  focusSelector('.gf-add-tile');
 }
 
 function openDraft(index) {
@@ -640,6 +650,7 @@ function closeDraft() {
   app.draftSlot = null;
   app.draftError = null;
   render();
+  focusSelector('.gf-main-row .gf-main-card');
 }
 
 function setDraftValue(index, value) {
@@ -716,6 +727,7 @@ function openClaim() {
 function closeClaim() {
   app.claimOpen = false;
   render();
+  focusSelector('.gf-gotfive');
 }
 
 function renderHome() {
@@ -1142,15 +1154,20 @@ function gfMainCard(player, index, options = {}) {
     attrs,
     h('span', { class: 'gf-card-ribbon', text: t('common.gotFive') }),
     gfEyes(color.id),
-    h('span', { class: 'gf-card-badge', text: value || t('sheet.none') }),
+    h(
+      'span',
+      { class: 'gf-card-badge' },
+      h('span', { class: 'gf-badge-symbol', 'aria-hidden': 'true', text: color.symbol }),
+      h('span', { text: value || t('sheet.none') }),
+    ),
   );
 }
 
-function gfTopBar(player) {
+function gfTopBar(player, inert = false) {
   const initial = (player.name || '?').trim().charAt(0).toUpperCase() || '?';
   return h(
     'header',
-    { class: 'gf-topbar' },
+    { class: 'gf-topbar', inert: inert ? true : null },
     h(
       'div',
       { class: 'gf-topbar-who' },
@@ -1255,7 +1272,11 @@ function gfFicheRow(color, colorIndex, player, visible, focus) {
   return h(
     'div',
     { class: `gf-fiche-row${focus?.colorIndex === colorIndex ? ' is-focus' : ''}` },
-    h('span', { class: 'gf-row-stripe', style: { background: color.hex }, 'aria-hidden': 'true' }),
+    h(
+      'span',
+      { class: 'gf-row-stripe', style: { background: color.hex }, 'aria-hidden': 'true' },
+      h('span', { class: 'gf-row-symbol', text: color.symbol }),
+    ),
     tilesForColor(colorIndex).map((cell) => gfFicheCell(cell.n, player, visible)),
   );
 }
@@ -1600,6 +1621,21 @@ function gfMenuDrawer(player) {
   );
 }
 
+function gfHasOverlay() {
+  if (app.screen !== 'turn' || !app.game) {
+    return app.menuOpen || app.revealOpen || app.draftSlot !== null;
+  }
+  const phase = app.game.phase;
+  return (
+    app.menuOpen ||
+    app.revealOpen ||
+    app.draftSlot !== null ||
+    (phase === PHASES.CHOOSE_TILE && app.selectedTile !== null) ||
+    phase === PHASES.CHOOSE_CLUE ||
+    phase === PHASES.COMPARE_SLOT
+  );
+}
+
 function renderTurn() {
   const game = app.game;
   if (!game) return renderHome();
@@ -1608,15 +1644,18 @@ function renderTurn() {
     return renderGameOver();
   }
   const player = currentPlayer(game);
+  const overlayOpen = gfHasOverlay();
   normalizeDraft(player);
   return h(
     'main',
     { class: 'screen gf-turn' },
-    gfTopBar(player),
-    app.notice ? h('p', { class: 'gf-notice', role: 'status', text: app.notice }) : null,
+    gfTopBar(player, overlayOpen),
+    app.notice
+      ? h('p', { class: 'gf-notice', role: 'status', inert: overlayOpen ? true : null, text: app.notice })
+      : null,
     h(
       'div',
-      { class: 'gf-turn-grid' },
+      { class: 'gf-turn-grid', inert: overlayOpen ? true : null },
       gfVisiblePanel(player),
       gfFichePanel(player),
       gfMainPanel(player),
@@ -2990,6 +3029,11 @@ function render() {
   if (app.screen === 'bot' && app.game?.phase === PHASES.GAME_OVER) app.screen = 'gameover';
   if (!app.game && !['home', 'setup', 'rules'].includes(app.screen)) app.screen = 'home';
 
+  document.body.classList.toggle(
+    'gf-no-scroll',
+    app.screen === 'turn' && (gfHasOverlay() || app.claimOpen || app.ficheOpen),
+  );
+
   root.replaceChildren();
 
   let view;
@@ -3010,7 +3054,10 @@ function render() {
   root.append(
     h(
       'footer',
-      { class: `app-version${app.screen === 'turn' ? ' app-version--turn' : ''}` },
+      {
+        class: `app-version${app.screen === 'turn' ? ' app-version--turn' : ''}`,
+        inert: app.screen === 'turn' && gfHasOverlay() ? true : null,
+      },
       h(
         'button',
         {
@@ -3047,6 +3094,18 @@ function render() {
     const dialog = buildFicheDialog();
     root.append(dialog);
     dialog.showModal();
+  }
+
+  if (app.screen === 'turn') {
+    const overlay = root.querySelector('.gf-overlay');
+    if (overlay) {
+      requestAnimationFrame(() => {
+        const target =
+          overlay.querySelector('.gf-overlay-close') ||
+          overlay.querySelector('button, input, [tabindex]');
+        target?.focus();
+      });
+    }
   }
 }
 
@@ -3114,7 +3173,38 @@ document.addEventListener('click', (event) => {
 });
 
 document.addEventListener('keydown', (event) => {
-  if (event.key !== 'Escape' || !app.langOpen) return;
+  if (event.key !== 'Escape') return;
+  if (app.claimOpen || app.ficheOpen) return;
+
+  if (app.menuOpen) {
+    event.preventDefault();
+    closeMenu();
+    return;
+  }
+  if (app.revealOpen) {
+    event.preventDefault();
+    closeReveal();
+    return;
+  }
+  if (app.draftSlot !== null) {
+    event.preventDefault();
+    closeDraft();
+    return;
+  }
+  if (app.screen === 'turn' && app.game) {
+    if (app.game.phase === PHASES.CHOOSE_TILE && app.selectedTile !== null) {
+      event.preventDefault();
+      clearSelectedTile();
+      return;
+    }
+    if (app.game.phase === PHASES.CHOOSE_CLUE || app.game.phase === PHASES.COMPARE_SLOT) {
+      event.preventDefault();
+      doCancelClue();
+      return;
+    }
+  }
+  if (!app.langOpen) return;
+  event.preventDefault();
   app.langOpen = false;
   render();
   requestAnimationFrame(() => document.querySelector('.lang-trigger')?.focus());

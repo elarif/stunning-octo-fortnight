@@ -4355,3 +4355,168 @@ button.tile:hover {
     min-height: 66px;
   }
 }
+
+/* ------------------------------------------------------------------
+   Review pass — lisibilité, cibles, feedback, couleurs et CTA
+   ------------------------------------------------------------------ */
+
+.gf-card-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+.gf-badge-symbol {
+  color: var(--gf-card);
+  font-size: 0.72em;
+  line-height: 1;
+}
+
+.gf-row-stripe {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gf-row-symbol {
+  color: #1a0f22;
+  font-size: 0.48rem;
+  font-weight: 900;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+@media (max-width: 759px) {
+  .gf-fiche-row {
+    grid-template-columns: 10px repeat(8, minmax(0, 1fr));
+  }
+}
+
+.gf-overlay-close {
+  width: 44px;
+  height: 44px;
+}
+
+.gf-page-btn {
+  min-height: 40px;
+}
+
+.gf-draft-value {
+  min-height: 44px;
+}
+
+.gf-menu .lang-trigger {
+  min-height: 44px;
+}
+
+.gf-end-turn {
+  min-height: 44px;
+}
+
+.gf-claim-modal .claim-input {
+  min-height: 44px;
+}
+
+.gf-cell,
+.gf-main-card,
+.gf-gotfive,
+.gf-end-turn,
+.gf-btn,
+.gf-add-tile,
+.gf-overlay-close,
+.gf-page-btn,
+.gf-menu-btn {
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.gf-cell:not(:disabled):hover {
+  border-color: var(--gf-yellow);
+  background-color: rgba(245, 196, 81, 0.08);
+}
+
+.gf-cell:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+.gf-gotfive:active,
+.gf-end-turn:active,
+.gf-btn:active,
+.gf-add-tile:active,
+.gf-overlay-close:active,
+.gf-page-btn:active,
+.gf-main-card:active {
+  transform: translateY(1px);
+}
+
+.gf-overlay-close:hover,
+.gf-page-btn:hover {
+  background: #342043;
+  border-color: #5a3a72;
+}
+
+@media (max-width: 759px) {
+  .gf-cell {
+    min-height: 44px;
+  }
+
+  .gf-turn {
+    padding-bottom: 140px;
+  }
+
+  .app-version--turn {
+    margin-bottom: 120px;
+  }
+}
+
+@media (min-width: 760px) {
+  .gf-turn {
+    padding-bottom: 140px;
+  }
+
+  .gf-bottom {
+    position: fixed;
+    right: auto;
+    bottom: 0;
+    left: 50%;
+    width: min(100%, 720px);
+    padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
+    border: 0;
+    background: linear-gradient(180deg, rgba(20, 8, 32, 0), rgba(20, 8, 32, 0.94) 30%);
+    transform: translateX(-50%);
+  }
+
+  .app-version--turn {
+    margin-bottom: 120px;
+  }
+
+  .gf-end-turn {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gf-cell,
+  .gf-main-card,
+  .gf-gotfive,
+  .gf-end-turn,
+  .gf-btn,
+  .gf-add-tile,
+  .gf-overlay-close,
+  .gf-page-btn,
+  .gf-menu-btn {
+    transition: none;
+  }
+}
+
+body.gf-no-scroll {
+  overflow: hidden;
+}
+
+.gf-page-btn {
+  min-height: 44px;
+}
