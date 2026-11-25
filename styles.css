@@ -3901,3 +3901,340 @@ button.tile:hover {
     min-height: calc(100dvh - 40px);
   }
 }
+
+/* ------------------------------------------------------------------
+   GOT FIVE — lisibilité : tailles de texte et cibles
+   ------------------------------------------------------------------ */
+
+.gf-wordmark {
+  font-size: 1.12rem;
+}
+
+.gf-player-name {
+  font-size: 0.82rem;
+}
+
+.gf-turn-label {
+  font-size: 0.72rem;
+}
+
+.gf-menu-btn {
+  font-size: 1.3rem;
+}
+
+.gf-panel-head h2 {
+  font-size: 0.78rem;
+  letter-spacing: 0.11em;
+}
+
+.gf-reserve,
+.gf-fiche-count {
+  font-size: 0.7rem;
+}
+
+.gf-turn .tile--lg .tile-num {
+  font-size: 1.2rem;
+}
+
+.gf-turn .tile-glyph {
+  font-size: 0.58rem;
+}
+
+.gf-add-tile {
+  font-size: 1.5rem;
+}
+
+.gf-page-btn {
+  font-size: 0.7rem;
+}
+
+.gf-fiche-legend {
+  font-size: 0.68rem;
+}
+
+.gf-cell {
+  min-height: 34px;
+}
+
+.gf-cell-num {
+  font-size: 1rem;
+}
+
+.gf-cell .dot {
+  width: 3px;
+  height: 3px;
+}
+
+.gf-main-row {
+  grid-template-columns: 12px repeat(5, minmax(0, 1fr)) 12px;
+  gap: 5px;
+}
+
+.gf-main-card {
+  height: 84px;
+}
+
+.gf-card-ribbon {
+  font-size: 0.48rem;
+  letter-spacing: -0.03em;
+}
+
+.gf-card-badge {
+  min-width: 36px;
+  height: 22px;
+  font-size: 0.9rem;
+}
+
+.gf-main-panel .notch-label {
+  font-size: 0.6rem;
+  letter-spacing: 0;
+}
+
+.gf-main-panel .tile--xs {
+  width: 24px;
+  height: 28px;
+}
+
+.gf-main-panel .tile--xs .tile-num {
+  font-size: 0.7rem;
+}
+
+.gf-main-panel .tile--xs .tile-glyph {
+  font-size: 0.42rem;
+}
+
+.gf-main-hint {
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.gf-result .result-line p {
+  font-size: 0.8rem;
+}
+
+.gf-result .result-badge {
+  font-size: 0.7rem;
+}
+
+.gf-end-turn strong {
+  font-size: 0.86rem;
+}
+
+.gf-end-turn span {
+  font-size: 0.65rem;
+}
+
+.gf-gotfive-label {
+  font-size: 1.1rem;
+}
+
+.gf-gotfive-count {
+  font-size: 0.72rem;
+}
+
+.gf-gotfive-sep {
+  font-size: 0.8rem;
+}
+
+.gf-overlay-head h2 {
+  font-size: 1.05rem;
+}
+
+.gf-modal-sub {
+  font-size: 0.82rem;
+}
+
+.gf-btn {
+  min-height: 44px;
+  font-size: 0.86rem;
+}
+
+.gf-color-symbol {
+  font-size: 0.7rem;
+}
+
+.gf-color-name,
+.gf-color-count {
+  font-size: 0.6rem;
+}
+
+.gf-draft-color {
+  font-size: 0.75rem;
+}
+
+.gf-draft-value strong {
+  font-size: 0.95rem;
+}
+
+.gf-draft-input {
+  font-size: 0.95rem;
+}
+
+.gf-log-avatar {
+  font-size: 0.68rem;
+}
+
+.gf-log-meta strong {
+  font-size: 0.8rem;
+}
+
+.gf-log-meta span {
+  font-size: 0.62rem;
+}
+
+.gf-log-detail {
+  font-size: 0.72rem;
+}
+
+.gf-log-tag {
+  font-size: 0.55rem;
+}
+
+.gf-menu-title {
+  font-size: 0.72rem;
+}
+
+.gf-opponent strong {
+  font-size: 0.8rem;
+}
+
+.gf-claim-modal h2 {
+  font-size: 1.25rem;
+}
+
+.gf-claim-count {
+  font-size: 0.72rem;
+}
+
+.gf-claim-note {
+  font-size: 0.76rem;
+}
+
+.gf-claim-modal .claim-input {
+  font-size: 1.05rem;
+}
+
+.gf-claim-modal .modal-actions .btn {
+  min-height: 44px;
+  font-size: 0.82rem;
+}
+
+@media (min-width: 760px) {
+  .gf-panel-head h2 {
+    font-size: 0.84rem;
+  }
+
+  .gf-cell {
+    min-height: 38px;
+  }
+
+  .gf-cell-num {
+    font-size: 1.05rem;
+  }
+
+  .gf-main-row {
+    grid-template-columns: 16px repeat(5, minmax(0, 1fr)) 16px;
+    gap: 6px;
+  }
+
+  .gf-main-card {
+    height: 96px;
+  }
+
+  .gf-card-ribbon {
+    font-size: 0.56rem;
+  }
+
+  .gf-card-badge {
+    min-width: 42px;
+    height: 25px;
+    font-size: 0.95rem;
+  }
+
+  .gf-main-panel .tile--xs {
+    width: 26px;
+    height: 30px;
+  }
+
+  .gf-main-panel .tile--xs .tile-num {
+    font-size: 0.76rem;
+  }
+
+  .gf-main-panel .notch-label {
+    font-size: 0.64rem;
+  }
+
+  .gf-main-hint {
+    font-size: 0.8rem;
+  }
+
+  .gf-gotfive-label {
+    font-size: 1.18rem;
+  }
+
+  .gf-gotfive-count {
+    font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .gf-cell {
+    min-height: 32px;
+  }
+
+  .gf-cell-num {
+    font-size: 0.92rem;
+  }
+
+  .gf-main-card {
+    height: 78px;
+  }
+
+  .gf-card-ribbon {
+    font-size: 0.44rem;
+  }
+
+  .gf-card-badge {
+    min-width: 32px;
+    height: 20px;
+    font-size: 0.82rem;
+  }
+}
+
+.gf-card-ribbon {
+  font-size: 0.5rem;
+  letter-spacing: -0.04em;
+}
+
+.gf-main-panel .notch-label {
+  font-size: 0.66rem;
+}
+
+.gf-log-tag {
+  font-size: 0.62rem;
+}
+
+.gf-color-name,
+.gf-color-count {
+  font-size: 0.66rem;
+}
+
+@media (min-width: 760px) {
+  .gf-main-card .gf-card-ribbon {
+    font-size: 0.62rem;
+  }
+
+  .gf-main-panel .notch-label {
+    font-size: 0.7rem;
+  }
+
+  .gf-panel-head h2 {
+    font-size: 0.88rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .gf-card-ribbon {
+    font-size: 0.48rem;
+  }
+}
