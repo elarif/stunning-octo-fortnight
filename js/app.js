@@ -43,6 +43,11 @@ const app = {
   selectedTile: null,
   claimOpen: false,
   ficheOpen: false,
+  menuOpen: false,
+  revealOpen: false,
+  draftSlot: null,
+  draftError: null,
+  fichePage: 0,
   rulesReturn: null,
   botPlayerId: null,
   botTimer: null,
@@ -311,11 +316,20 @@ function scheduleBotStep(delay = 700) {
   app.botTimer = setTimeout(runBotStep, delay);
 }
 
+function resetTurnUi() {
+  app.menuOpen = false;
+  app.revealOpen = false;
+  app.draftSlot = null;
+  app.draftError = null;
+  app.fichePage = 0;
+}
+
 function enterCurrentTurn() {
   clearBotTimer();
   app.claimOpen = false;
   app.ficheOpen = false;
   app.selectedTile = null;
+  resetTurnUi();
 
   if (!app.game) {
     app.screen = 'home';
@@ -365,6 +379,7 @@ function goHome() {
   app.claimOpen = false;
   app.ficheOpen = false;
   app.selectedTile = null;
+  resetTurnUi();
   app.notice = null;
   app.botPlayerId = null;
   app.botMessage = null;
@@ -385,6 +400,7 @@ function requestNewGame() {
   app.claimOpen = false;
   app.ficheOpen = false;
   app.selectedTile = null;
+  resetTurnUi();
   app.notice = null;
   app.botPlayerId = null;
   app.botMessage = null;
@@ -405,6 +421,7 @@ function continueGame() {
   app.claimOpen = false;
   app.ficheOpen = false;
   app.selectedTile = null;
+  resetTurnUi();
   app.notice = null;
   app.botPlayerId = null;
   app.botMessage = null;
@@ -436,6 +453,7 @@ function startGame() {
   app.claimOpen = false;
   app.ficheOpen = false;
   app.selectedTile = null;
+  resetTurnUi();
   app.botPlayerId = null;
   app.botMessage = null;
   persist();
@@ -451,6 +469,7 @@ function startTurn() {
   app.notice = null;
   app.selectedTile = null;
   app.ficheOpen = false;
+  resetTurnUi();
   render();
 }
 
@@ -460,6 +479,9 @@ function openRules() {
   app.screen = 'rules';
   app.claimOpen = false;
   app.ficheOpen = false;
+  app.menuOpen = false;
+  app.revealOpen = false;
+  app.draftSlot = null;
   render();
 }
 
@@ -484,6 +506,9 @@ function runAction(action) {
 }
 
 function doReveal(colorIndex) {
+  app.revealOpen = false;
+  app.menuOpen = false;
+  app.draftSlot = null;
   runAction((game) => reveal(game, colorIndex));
 }
 
@@ -494,6 +519,9 @@ function doSkipReveal() {
 function selectPublicTile(n) {
   if (!app.game || app.game.phase !== PHASES.CHOOSE_TILE) return;
   app.selectedTile = app.selectedTile === n ? null : n;
+  app.draftSlot = null;
+  app.menuOpen = false;
+  app.draftError = null;
   render();
 }
 
@@ -512,6 +540,10 @@ function doChooseClue(type) {
     game = chooseClue(game, type);
     app.game = game;
     app.selectedTile = null;
+    app.menuOpen = false;
+    app.revealOpen = false;
+    app.draftSlot = null;
+    app.draftError = null;
     app.notice = null;
     persist();
     render();
@@ -525,6 +557,10 @@ function doCancelClue() {
   try {
     app.game = cancelClue(app.game);
     app.selectedTile = null;
+    app.menuOpen = false;
+    app.revealOpen = false;
+    app.draftSlot = null;
+    app.draftError = null;
     app.notice = null;
     persist();
     render();
@@ -535,6 +571,9 @@ function doCancelClue() {
 }
 
 function doChooseCompareSlot(slot) {
+  app.menuOpen = false;
+  app.revealOpen = false;
+  app.draftSlot = null;
   runAction((game) => chooseCompareSlot(game, slot));
 }
 
@@ -552,6 +591,10 @@ function doEndTurn() {
   try {
     app.game = endTurn(app.game);
     app.notice = null;
+    app.menuOpen = false;
+    app.revealOpen = false;
+    app.draftSlot = null;
+    app.draftError = null;
     persist();
     enterCurrentTurn();
   } catch (error) {
@@ -560,11 +603,112 @@ function doEndTurn() {
   }
 }
 
+function openMenu() {
+  app.menuOpen = true;
+  app.revealOpen = false;
+  app.draftSlot = null;
+  render();
+}
+
+function closeMenu() {
+  app.menuOpen = false;
+  render();
+}
+
+function openReveal() {
+  if (!app.game || app.game.phase !== PHASES.REVEAL) return;
+  app.revealOpen = true;
+  app.menuOpen = false;
+  app.draftSlot = null;
+  render();
+}
+
+function closeReveal() {
+  app.revealOpen = false;
+  render();
+}
+
+function openDraft(index) {
+  app.draftSlot = index;
+  app.draftError = null;
+  app.revealOpen = false;
+  app.menuOpen = false;
+  render();
+}
+
+function closeDraft() {
+  app.draftSlot = null;
+  app.draftError = null;
+  render();
+}
+
+function setDraftValue(index, value) {
+  const player = currentPlayer(app.game);
+  player.draft[index] = String(value);
+  persist();
+  app.draftSlot = null;
+  app.draftError = null;
+  app.notice = null;
+  render();
+}
+
+function submitDraftValue(event) {
+  event.preventDefault();
+  const player = currentPlayer(app.game);
+  const index = app.draftSlot;
+  if (index === null) return;
+  const input = event.currentTarget.querySelector('.gf-draft-input');
+  const n = Number(input?.value);
+  const slotTile = tile(player.stand[index]);
+  const visible = visibleNumbersFor(app.game, player.id);
+  if (
+    !Number.isInteger(n) ||
+    n < 1 ||
+    n > 60 ||
+    tile(n).colorIndex !== slotTile.colorIndex ||
+    visible.has(n) ||
+    player.manual.includes(n)
+  ) {
+    app.draftError = t('gf.invalidValue');
+    render();
+    return;
+  }
+  setDraftValue(index, n);
+}
+
+function toggleFichePage() {
+  app.fichePage = app.fichePage === 0 ? 1 : 0;
+  render();
+}
+
+function gfToggleManual(n, player) {
+  const set = new Set(player.manual);
+  if (set.has(n)) set.delete(n);
+  else set.add(n);
+  player.manual = [...set].sort((a, b) => a - b);
+  persist();
+  render();
+}
+
+function nextPlayerName() {
+  const game = app.game;
+  if (!game) return '';
+  const count = game.players.length;
+  for (let step = 1; step <= count; step += 1) {
+    const player = game.players[(game.currentPlayer + step) % count];
+    if (!player.eliminated) return player.name;
+  }
+  return '';
+}
+
 function openClaim() {
   if (!app.game || app.game.phase === PHASES.GAME_OVER) return;
   const player = currentPlayer(app.game);
   if (player.eliminated || player.hasClaimed) return;
   app.ficheOpen = false;
+  app.menuOpen = false;
+  app.revealOpen = false;
+  app.draftSlot = null;
   app.claimOpen = true;
   render();
 }
@@ -938,6 +1082,524 @@ function getFicheFocus(game, player) {
   };
 }
 
+function gfOverlay(className, title, onClose, ...body) {
+  return h(
+    'div',
+    { class: `gf-overlay ${className}`, role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
+    h('div', { class: 'gf-overlay-hit', onclick: onClose }),
+    h(
+      'section',
+      { class: 'gf-overlay-panel' },
+      h(
+        'div',
+        { class: 'gf-overlay-head' },
+        h('h2', { text: title }),
+        h(
+          'button',
+          { class: 'gf-overlay-close', type: 'button', 'aria-label': t('common.close'), onclick: onClose },
+          '×',
+        ),
+      ),
+      ...body,
+    ),
+  );
+}
+
+function gfEyes() {
+  return h(
+    'span',
+    { class: 'gf-eyes', 'aria-hidden': 'true' },
+    h('span', { class: 'gf-eye' }),
+    h('span', { class: 'gf-eye' }),
+  );
+}
+
+function gfMainCard(player, index, options = {}) {
+  const color = tile(player.stand[index]).color;
+  const value = player.draft[index] ?? '';
+  const classes = ['gf-main-card', `gf-main-card--${color.id}`];
+  if (options.compare) classes.push('is-compare');
+  if (options.selected) classes.push('is-selected');
+  if (options.small) classes.push('is-small');
+  const label = options.compare
+    ? t('gf.compareWith', { ordinal: ordinal(index + 1), color: colorName(color) })
+    : t('gf.cardAria', {
+        ordinal: ordinal(index + 1),
+        color: colorName(color),
+        value: value || t('sheet.none'),
+      });
+  const attrs = {
+    class: classes.join(' '),
+    type: 'button',
+    style: { '--gf-card': color.hex, '--gf-card-ink': color.ink },
+    'aria-label': label,
+  };
+  if (options.onClick) attrs.onclick = options.onClick;
+  else if (options.compare) attrs.onclick = () => doChooseCompareSlot(index);
+  else if (options.editable) attrs.onclick = () => openDraft(index);
+  return h(
+    'button',
+    attrs,
+    h('span', { class: 'gf-card-ribbon', text: t('common.gotFive') }),
+    gfEyes(),
+    h('span', { class: 'gf-card-badge', text: value || t('sheet.none') }),
+  );
+}
+
+function gfTopBar(player) {
+  const initial = (player.name || '?').trim().charAt(0).toUpperCase() || '?';
+  return h(
+    'header',
+    { class: 'gf-topbar' },
+    h(
+      'div',
+      { class: 'gf-topbar-who' },
+      h('span', { class: 'gf-avatar', 'aria-hidden': 'true', text: initial }),
+      h(
+        'div',
+        { class: 'gf-topbar-id' },
+        h('span', { class: 'gf-wordmark', text: 'GOT FIVE!' }),
+        h('strong', { class: 'gf-player-name', text: player.name }),
+        h('span', { class: 'gf-turn-label', text: t('gf.turnLabel', { n: app.game.turn }) }),
+      ),
+    ),
+    h(
+      'button',
+      { class: 'gf-menu-btn', type: 'button', 'aria-label': t('gf.menu'), onclick: openMenu },
+      h('span', { 'aria-hidden': 'true', text: '☰' }),
+    ),
+  );
+}
+
+function gfVisiblePanel(player) {
+  const game = app.game;
+  const selecting = game.phase === PHASES.CHOOSE_TILE;
+  const selected = app.selectedTile ?? game.chosenTile;
+  return h(
+    'section',
+    { class: 'gf-panel gf-visible-panel' },
+    h(
+      'div',
+      { class: 'gf-panel-head' },
+      h('h2', { text: selecting ? t('gf.chooseVisible') : t('gf.visibleTiles') }),
+      h('span', { class: 'gf-reserve', text: t('gf.reserve', { n: game.supply.length }) }),
+    ),
+    h(
+      'div',
+      { class: 'gf-visible-row' },
+      game.publicTiles.map((n) =>
+        tileEl(n, {
+          size: 'lg',
+          onclick: selecting ? () => selectPublicTile(n) : null,
+          selected: selected === n,
+          highlight: game.lastRevealed === n && game.revealed !== null,
+        }),
+      ),
+      game.phase === PHASES.REVEAL
+        ? game.supply.length > 0
+          ? h(
+              'button',
+              {
+                class: 'gf-add-tile',
+                type: 'button',
+                'aria-label': t('gf.revealTitle'),
+                onclick: openReveal,
+              },
+              '+',
+            )
+          : h(
+              'button',
+              { class: 'gf-add-tile gf-add-tile--wide', type: 'button', onclick: doSkipReveal },
+              t('gf.skipReveal'),
+            )
+        : null,
+    ),
+  );
+}
+
+function gfFicheCell(n, player, visible) {
+  const data = tile(n);
+  const auto = visible.has(n);
+  const manual = player.manual.includes(n);
+  const current = app.game.clue?.tile === n;
+  const offPage = app.fichePage === 0 ? n > 40 : n <= 40;
+  const classes = ['gf-cell', `gf-cell--${data.color.id}`];
+  if (auto) classes.push('is-auto');
+  if (manual) classes.push('is-manual');
+  if (current) classes.push('is-current');
+  if (offPage) classes.push('is-offpage');
+  const attrs = {
+    class: classes.join(' '),
+    type: 'button',
+    style: { '--gf-cell-color': data.color.hex },
+    'aria-label': t('sheet.cellAria', {
+      n,
+      color: colorName(data.color),
+      dots: data.dots,
+      s: data.dots > 1 ? 's' : '',
+      auto: auto ? t('sheet.auto') : '',
+    }),
+    'aria-pressed': String(auto || manual),
+  };
+  if (auto) attrs.disabled = true;
+  else attrs.onclick = () => gfToggleManual(n, player);
+  return h(
+    'button',
+    attrs,
+    h('span', { class: 'gf-cell-num', text: String(n) }),
+    dotsEl(data.dots),
+  );
+}
+
+function gfFicheRow(color, colorIndex, player, visible, focus) {
+  return h(
+    'div',
+    { class: `gf-fiche-row${focus?.colorIndex === colorIndex ? ' is-focus' : ''}` },
+    h('span', { class: 'gf-row-stripe', style: { background: color.hex }, 'aria-hidden': 'true' }),
+    tilesForColor(colorIndex).map((cell) => gfFicheCell(cell.n, player, visible)),
+  );
+}
+
+function gfFichePanel(player) {
+  const game = app.game;
+  const visible = visibleNumbersFor(game, player.id);
+  const focus = getFicheFocus(game, player);
+  const barred = new Set([...visible, ...player.manual]).size;
+  return h(
+    'section',
+    { class: 'gf-panel gf-fiche-panel' },
+    h(
+      'div',
+      { class: 'gf-panel-head' },
+      h('h2', { text: t('gf.fiche') }),
+      h('span', { class: 'gf-fiche-count', text: t('gf.barred', { count: barred }) }),
+    ),
+    h(
+      'div',
+      { class: 'gf-fiche-grid' },
+      COLORS.map((color, index) => gfFicheRow(color, index, player, visible, focus)),
+    ),
+    h(
+      'div',
+      { class: 'gf-fiche-foot' },
+      h(
+        'button',
+        { class: 'gf-page-btn', type: 'button', onclick: toggleFichePage },
+        app.fichePage === 0 ? t('gf.pageNext') : t('gf.pagePrev'),
+      ),
+      h(
+        'div',
+        { class: 'gf-fiche-legend' },
+        h(
+          'span',
+          { class: 'gf-legend' },
+          h('span', { class: 'gf-swatch gf-swatch--auto', 'aria-hidden': 'true' }),
+          t('gf.auto'),
+        ),
+        h(
+          'span',
+          { class: 'gf-legend' },
+          h('span', { class: 'gf-swatch gf-swatch--manual', 'aria-hidden': 'true' }),
+          t('gf.manual'),
+        ),
+      ),
+    ),
+  );
+}
+
+function gfMainPanel(player) {
+  const game = app.game;
+  const clue = game.clue;
+  const compare = game.phase === PHASES.COMPARE_SLOT;
+  const editable = !compare && game.phase !== PHASES.CHOOSE_CLUE;
+  return h(
+    'section',
+    { class: 'gf-panel gf-main-panel' },
+    h(
+      'div',
+      { class: 'gf-panel-head' },
+      h('h2', { text: t('gf.main') }),
+      compare ? h('span', { class: 'gf-main-count', text: t('gf.comparePrompt') }) : null,
+    ),
+    h('div', { class: 'gf-sortings' }, renderSortingZone(player, true, clue)),
+    h(
+      'div',
+      { class: 'gf-main-row' },
+      h('span', { class: 'gf-order-sign', 'aria-hidden': 'true', text: '−' }),
+      player.stand.map((_, index) => gfMainCard(player, index, { compare, editable })),
+      h('span', { class: 'gf-order-sign', 'aria-hidden': 'true', text: '+' }),
+    ),
+    h('div', { class: 'gf-comparisons' }, renderComparisonRow(player, true, clue, false)),
+    game.phase === PHASES.END ? h('div', { class: 'gf-result' }, renderClueResult()) : null,
+    h('p', { class: 'gf-main-hint', text: t('gf.tapHint') }),
+    h('p', { class: 'gf-main-hint', text: t('gf.crossHint') }),
+  );
+}
+
+function gfBottomBar(player) {
+  const game = app.game;
+  const count = player.draft.filter((value) => value !== '').length;
+  const complete = draftComplete(player);
+  return h(
+    'div',
+    { class: 'gf-bottom' },
+    game.phase === PHASES.END
+      ? h(
+          'button',
+          { class: 'gf-end-turn', type: 'button', onclick: doEndTurn },
+          h('strong', { text: t('gf.endTurn') }),
+          h('span', { text: t('gf.passTo', { name: nextPlayerName() }) }),
+        )
+      : null,
+    h(
+      'button',
+      {
+        class: `gf-gotfive${complete ? ' is-ready' : ''}`,
+        type: 'button',
+        onclick: openClaim,
+        disabled: player.eliminated || player.hasClaimed,
+      },
+      h('span', { class: 'gf-gotfive-label', text: t('common.gotFive') }),
+      h('span', { class: 'gf-gotfive-sep', 'aria-hidden': 'true', text: '·' }),
+      h('span', { class: 'gf-gotfive-count', text: t('gf.claimCount', { n: count }) }),
+    ),
+  );
+}
+
+function gfRevealModal() {
+  const game = app.game;
+  const available = canRevealColors(game);
+  const counts = COLORS.map(
+    (_, colorIndex) => game.supply.filter((n) => tile(n).colorIndex === colorIndex).length,
+  );
+  return gfOverlay(
+    'gf-reveal-modal',
+    t('gf.revealTitle'),
+    closeReveal,
+    h('p', { class: 'gf-modal-sub', text: t('gf.revealHint') }),
+    h(
+      'div',
+      { class: 'gf-color-grid' },
+      COLORS.map((color, index) =>
+        h(
+          'button',
+          {
+            class: `gf-color-card gf-color-card--${color.id}`,
+            type: 'button',
+            style: { '--gf-color': color.hex, '--gf-color-ink': color.ink },
+            disabled: !available[index],
+            onclick: () => doReveal(index),
+          },
+          h('span', { class: 'gf-color-symbol', 'aria-hidden': 'true', text: color.symbol }),
+          gfEyes(),
+          h('span', { class: 'gf-color-name', text: colorName(color) }),
+          h('span', {
+            class: 'gf-color-count',
+            text: t('gf.remaining', { count: counts[index], s: counts[index] > 1 ? 's' : '' }),
+          }),
+        ),
+      ),
+    ),
+  );
+}
+
+function gfClueModal(player) {
+  const game = app.game;
+  const n = app.selectedTile ?? game.chosenTile;
+  if (n === null) return null;
+  if (
+    game.phase !== PHASES.CHOOSE_TILE &&
+    game.phase !== PHASES.CHOOSE_CLUE &&
+    game.phase !== PHASES.COMPARE_SLOT
+  ) {
+    return null;
+  }
+  const compare = game.phase === PHASES.COMPARE_SLOT;
+  const close = () => {
+    if (game.phase === PHASES.CHOOSE_TILE) clearSelectedTile();
+    else doCancelClue();
+  };
+  return gfOverlay(
+    'gf-clue-modal',
+    t('gf.chooseTileTitle', { n }),
+    close,
+    h(
+      'div',
+      { class: 'gf-clue-head' },
+      tileEl(n, { size: 'md' }),
+      h('p', {
+        class: 'gf-modal-sub',
+        text: compare ? t('gf.comparePrompt') : t('gf.chooseTileHint'),
+      }),
+    ),
+    compare
+      ? null
+      : h(
+          'div',
+          { class: 'gf-clue-actions' },
+          h(
+            'button',
+            { class: 'gf-btn gf-btn--clue', type: 'button', onclick: () => doChooseClue('sort') },
+            t('common.sort'),
+          ),
+          h(
+            'button',
+            { class: 'gf-btn gf-btn--clue', type: 'button', onclick: () => doChooseClue('compare') },
+            t('common.compare'),
+          ),
+        ),
+    h(
+      'div',
+      { class: 'gf-clue-cards' },
+      player.stand.map((_, index) =>
+        gfMainCard(player, index, { compare, small: true }),
+      ),
+    ),
+    compare
+      ? h('button', { class: 'gf-link', type: 'button', onclick: doCancelClue }, t('common.change'))
+      : null,
+  );
+}
+
+function gfDraftModal(player) {
+  const index = app.draftSlot;
+  if (index === null) return null;
+  const slotTile = tile(player.stand[index]);
+  const candidates = remainingNumbers(player, index);
+  return gfOverlay(
+    'gf-draft-modal',
+    t('gf.draftTitle'),
+    closeDraft,
+    h(
+      'div',
+      { class: 'gf-draft-cards' },
+      player.stand.map((_, cardIndex) =>
+        gfMainCard(player, cardIndex, {
+          selected: cardIndex === index,
+          small: true,
+          onClick: () => {
+            app.draftSlot = cardIndex;
+            app.draftError = null;
+            render();
+          },
+        }),
+      ),
+    ),
+    h('p', {
+      class: 'gf-draft-color',
+      text: `${ordinal(index + 1)} · ${colorName(slotTile.color)}`,
+    }),
+    h(
+      'div',
+      { class: 'gf-draft-values' },
+      candidates.map((n) =>
+        h(
+          'button',
+          {
+            class: `gf-draft-value${player.draft[index] === String(n) ? ' is-current' : ''}`,
+            type: 'button',
+            onclick: () => setDraftValue(index, n),
+          },
+          h('strong', { text: String(n) }),
+          dotsEl(tile(n).dots),
+        ),
+      ),
+    ),
+    h(
+      'form',
+      { class: 'gf-draft-form', onsubmit: submitDraftValue },
+      h('input', {
+        class: 'gf-draft-input',
+        type: 'text',
+        inputmode: 'numeric',
+        maxlength: '2',
+        placeholder: t('gf.enterValue'),
+        'aria-label': t('gf.enterValue'),
+      }),
+      h('button', { class: 'gf-btn gf-btn--primary', type: 'submit' }, t('gf.apply')),
+    ),
+    app.draftError ? h('p', { class: 'gf-error', role: 'alert', text: app.draftError }) : null,
+    h('p', { class: 'gf-modal-sub', text: t('gf.draftHint') }),
+  );
+}
+
+function gfLogTag(entry) {
+  if (entry.key === 'sort') return t('gf.tagSort');
+  if (entry.key === 'compare') return t('gf.tagCompare');
+  if (entry.key === 'reveal') return t('gf.tagReveal');
+  if (entry.key === 'setup') return t('gf.tagSetup');
+  if (['claimWin', 'claimLose', 'lastActive', 'draw'].includes(entry.key)) return t('gf.tagClaim');
+  return t('gf.tagSkip');
+}
+
+function gfLogEntry(entry, game) {
+  const name = entry.params?.player ?? null;
+  const actor = name ? game.players.find((player) => player.name === name) : null;
+  const initial = actor ? actor.name.trim().charAt(0).toUpperCase() : '·';
+  const tileNumber = Number.isInteger(entry.params?.tile) ? entry.params.tile : null;
+  return h(
+    'li',
+    { class: `gf-log-entry gf-log-entry--${entry.type}` },
+    h('span', { class: 'gf-log-avatar', 'aria-hidden': 'true', text: initial }),
+    h(
+      'div',
+      { class: 'gf-log-main' },
+      h(
+        'div',
+        { class: 'gf-log-meta' },
+        h('strong', { text: name || t('gf.tagSetup') }),
+        h('span', { text: t('gf.turnLabel', { n: entry.turn }) }),
+      ),
+      tileNumber ? h('div', { class: 'gf-log-tile' }, tileEl(tileNumber, { size: 'xs' })) : null,
+      h('span', { class: 'gf-log-detail', text: formatLog(entry) }),
+    ),
+    h('span', { class: 'gf-log-tag', text: gfLogTag(entry) }),
+  );
+}
+
+function gfMenuDrawer(player) {
+  const game = app.game;
+  const entries = game.log.slice().reverse();
+  return gfOverlay(
+    'gf-menu',
+    t('gf.journal'),
+    closeMenu,
+    h(
+      'div',
+      { class: 'gf-menu-status' },
+      h('span', { class: 'gf-pill', text: t('gf.reserve', { n: game.supply.length }) }),
+      renderLangSwitcher(),
+    ),
+    entries.length
+      ? h('ol', { class: 'gf-log' }, entries.map((entry) => gfLogEntry(entry, game)))
+      : h('p', { class: 'gf-modal-sub', text: t('gf.noRounds') }),
+    h('h3', { class: 'gf-menu-title', text: t('gf.opponents') }),
+    h(
+      'div',
+      { class: 'gf-opponents' },
+      game.players
+        .filter((other) => other.id !== player.id)
+        .map((opponent) =>
+          h(
+            'article',
+            { class: 'gf-opponent' },
+            h('strong', { text: opponent.name }),
+            h(
+              'div',
+              { class: 'gf-opponent-tiles' },
+              opponent.stand.map((n) => tileEl(n, { size: 'sm' })),
+            ),
+          ),
+        ),
+    ),
+    h(
+      'div',
+      { class: 'gf-menu-actions' },
+      h('button', { class: 'gf-btn', type: 'button', onclick: openRules }, t('common.rules')),
+    ),
+  );
+}
+
 function renderTurn() {
   const game = app.game;
   if (!game) return renderHome();
@@ -946,39 +1608,24 @@ function renderTurn() {
     return renderGameOver();
   }
   const player = currentPlayer(game);
-  const focus = getFicheFocus(game, player);
-
-  const header = h(
-    'header',
-    { class: 'turn-header' },
-    h('div', { class: 'turn-header-main' },
-      h('div', { class: 'turn-title' },
-        h('span', { class: 'eyebrow', text: t('turn.turn', { n: game.turn }) }),
-        h('h1', { class: 'turn-player', text: player.name }),
-      ),
-      h('div', { class: 'turn-meta' },
-        h('span', { class: 'pill', text: t('turn.reserve', { n: game.supply.length }) }),
-        renderLangSwitcher(),
-        h('button', { class: 'btn btn--icon', type: 'button', onclick: openRules, 'aria-label': t('turn.rules') }, '?'),
-      ),
-    ),
-    app.notice ? h('p', { class: 'notice', text: app.notice }) : null,
-  );
-
+  normalizeDraft(player);
   return h(
     'main',
-    { class: 'screen screen--turn' },
-    header,
+    { class: 'screen gf-turn' },
+    gfTopBar(player),
+    app.notice ? h('p', { class: 'gf-notice', role: 'status', text: app.notice }) : null,
     h(
       'div',
-      { class: 'turn-content' },
-      renderActionDock(player),
-      renderPublicTable(player),
-      renderOwnStand(player),
-      renderSheet(player, { focus, claimable: true }),
-      renderJournalSection(),
+      { class: 'gf-turn-grid' },
+      gfVisiblePanel(player),
+      gfFichePanel(player),
+      gfMainPanel(player),
+      gfBottomBar(player),
     ),
-    h('p', { class: 'fineprint' }, t('turn.fineprint')),
+    app.menuOpen ? gfMenuDrawer(player) : null,
+    app.revealOpen ? gfRevealModal(player) : null,
+    gfClueModal(player),
+    app.draftSlot !== null ? gfDraftModal(player) : null,
   );
 }
 
@@ -2201,6 +2848,18 @@ function buildClaimDialog() {
   const game = app.game;
   const player = currentPlayer(game);
   const error = h('p', { class: 'form-error', role: 'alert', hidden: true });
+  let submitButton = null;
+  const syncClaim = () => {
+    const numbers = inputs.map((input) => Number(input.value.trim()));
+    if (submitButton) submitButton.disabled = !isValidClaimNumbers(numbers);
+    const filled = inputs.filter((input) => input.value.trim() !== '').length;
+    const count = document.querySelector('.gf-claim-modal .gf-claim-count');
+    if (count) count.textContent = t('gf.claimCount', { n: filled });
+    const badges = document.querySelectorAll('.gf-claim-cards .gf-main-card .gf-card-badge');
+    badges.forEach((badge, index) => {
+      badge.textContent = inputs[index]?.value.trim() || t('sheet.none');
+    });
+  };
   const inputs = Array.from({ length: 5 }, (_, index) =>
     h('input', {
       class: 'claim-input',
@@ -2215,13 +2874,24 @@ function buildClaimDialog() {
         event.target.value = value;
         player.draft[index] = value;
         persist();
+        syncClaim();
       },
     }),
   );
 
+  const filled = inputs.filter((input) => input.value.trim() !== '').length;
+  submitButton = h(
+    'button',
+    {
+      class: 'btn btn--primary',
+      type: 'submit',
+      disabled: !isValidClaimNumbers(inputs.map((input) => Number(input.value.trim()))),
+    },
+    t('claim.submit'),
+  );
   const dialog = h(
     'dialog',
-    { class: 'modal', 'aria-labelledby': 'claim-title' },
+    { class: 'modal gf-claim-modal', 'aria-labelledby': 'claim-title' },
     h(
       'form',
       {
@@ -2258,15 +2928,21 @@ function buildClaimDialog() {
           }
         },
       },
-      h('h2', { id: 'claim-title', text: t('claim.title') }),
-      h('button', { class: 'btn btn--ghost claim-fiche', type: 'button', onclick: openFiche }, t('claim.fiche')),
+      h('h2', { id: 'claim-title', text: t('gf.claimTitle') }),
+      h(
+        'div',
+        { class: 'gf-claim-cards' },
+        player.stand.map((_, index) => gfMainCard(player, index, { small: true })),
+      ),
+      h('p', { class: 'gf-claim-count', text: t('gf.claimCount', { n: filled }) }),
+      h('p', { class: 'gf-claim-note', text: t('gf.claimNote') }),
       h('div', { class: 'claim-inputs' }, inputs),
       error,
       h(
         'div',
         { class: 'modal-actions' },
         h('button', { class: 'btn btn--ghost', type: 'button', onclick: closeClaim }, t('claim.cancel')),
-        h('button', { class: 'btn btn--primary', type: 'submit' }, t('claim.submit')),
+        submitButton,
       ),
     ),
   );
@@ -2334,7 +3010,7 @@ function render() {
   root.append(
     h(
       'footer',
-      { class: 'app-version' },
+      { class: `app-version${app.screen === 'turn' ? ' app-version--turn' : ''}` },
       h(
         'button',
         {
