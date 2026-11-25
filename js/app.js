@@ -1105,10 +1105,10 @@ function gfOverlay(className, title, onClose, ...body) {
   );
 }
 
-function gfEyes() {
+function gfEyes(colorId) {
   return h(
     'span',
-    { class: 'gf-eyes', 'aria-hidden': 'true' },
+    { class: `gf-eyes gf-eyes--${colorId}`, 'aria-hidden': 'true' },
     h('span', { class: 'gf-eye' }),
     h('span', { class: 'gf-eye' }),
   );
@@ -1141,7 +1141,7 @@ function gfMainCard(player, index, options = {}) {
     'button',
     attrs,
     h('span', { class: 'gf-card-ribbon', text: t('common.gotFive') }),
-    gfEyes(),
+    gfEyes(color.id),
     h('span', { class: 'gf-card-badge', text: value || t('sheet.none') }),
   );
 }
@@ -1391,11 +1391,11 @@ function gfRevealModal() {
             onclick: () => doReveal(index),
           },
           h('span', { class: 'gf-color-symbol', 'aria-hidden': 'true', text: color.symbol }),
-          gfEyes(),
+          gfEyes(color.id),
           h('span', { class: 'gf-color-name', text: colorName(color) }),
           h('span', {
             class: 'gf-color-count',
-            text: t('gf.remaining', { count: counts[index], s: counts[index] > 1 ? 's' : '' }),
+            text: `×${counts[index]}`,
           }),
         ),
       ),

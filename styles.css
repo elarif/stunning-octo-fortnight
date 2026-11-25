@@ -4238,3 +4238,37 @@ button.tile:hover {
     font-size: 0.48rem;
   }
 }
+
+.gf-eyes {
+  --gf-eye-x: 0px;
+  --gf-eye-y: 0px;
+}
+
+.gf-eye::after {
+  transform: translate(var(--gf-eye-x), var(--gf-eye-y));
+}
+
+.gf-eyes--green {
+  --gf-eye-x: -2px;
+  --gf-eye-y: 0px;
+}
+
+.gf-eyes--pink {
+  --gf-eye-x: 2px;
+  --gf-eye-y: 0px;
+}
+
+.gf-eyes--blue {
+  --gf-eye-x: 0px;
+  --gf-eye-y: -2px;
+}
+
+.gf-eyes--red {
+  --gf-eye-x: 0px;
+  --gf-eye-y: 2px;
+}
+
+.gf-eyes--orange {
+  --gf-eye-x: 2px;
+  --gf-eye-y: -2px;
+}
