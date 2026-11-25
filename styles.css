@@ -4272,3 +4272,48 @@ button.tile:hover {
   --gf-eye-x: 2px;
   --gf-eye-y: -2px;
 }
+
+@media (min-width: 760px) {
+  .gf-turn {
+    max-width: 980px;
+  }
+
+  .gf-visible-panel,
+  .gf-main-panel,
+  .gf-bottom {
+    width: min(100%, 720px);
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  .gf-fiche-panel {
+    width: 100%;
+    padding: 13px;
+  }
+
+  .gf-fiche-row {
+    grid-template-columns: 10px repeat(12, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .gf-cell {
+    min-height: 44px;
+  }
+
+  .gf-cell-num {
+    font-size: 1.25rem;
+  }
+
+  .gf-cell .dot {
+    width: 3px;
+    height: 3px;
+  }
+
+  .gf-fiche-count {
+    font-size: 0.8rem;
+  }
+
+  .gf-fiche-legend {
+    font-size: 0.76rem;
+  }
+}
