@@ -4317,3 +4317,18 @@ button.tile:hover {
     font-size: 0.76rem;
   }
 }
+
+@media (min-width: 760px) {
+  .gf-cell {
+    min-height: 66px;
+  }
+
+  .gf-cell-num {
+    font-size: 1.35rem;
+  }
+
+  .gf-cell .dot {
+    width: 3px;
+    height: 3px;
+  }
+}
