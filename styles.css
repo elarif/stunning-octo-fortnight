@@ -3739,7 +3739,7 @@ button.tile:hover {
 
 @media (min-width: 760px) {
   .gf-turn {
-    max-width: 1160px;
+    max-width: 720px;
     margin: 0 auto;
     padding-bottom: 20px;
   }
@@ -3749,124 +3749,68 @@ button.tile:hover {
   }
 
   .gf-turn-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1.35fr) minmax(330px, 0.9fr);
-    grid-template-areas:
-      'fiche visible'
-      'fiche main'
-      'fiche bottom';
+    display: flex;
+    flex-direction: column;
     gap: 12px;
-    align-items: start;
-  }
-
-  .gf-visible-panel {
-    grid-area: visible;
-  }
-
-  .gf-fiche-panel {
-    grid-area: fiche;
-  }
-
-  .gf-main-panel {
-    grid-area: main;
-  }
-
-  .gf-visible-panel,
-  .gf-main-panel {
-    padding: 8px;
-  }
-
-  .gf-visible-row {
-    gap: 6px;
-    padding: 5px 0 0;
   }
 
   .gf-turn .tile--lg {
-    width: 40px;
-    height: 52px;
-    border-radius: 8px;
+    width: 52px;
+    height: 66px;
+    border-radius: 10px;
   }
 
   .gf-turn .tile--lg .tile-num {
-    font-size: 0.92rem;
-  }
-
-  .gf-turn .tile-glyph {
-    font-size: 0.42rem;
+    font-size: 1.15rem;
   }
 
   .gf-add-tile {
-    width: 40px;
-    height: 52px;
-    font-size: 1.1rem;
-  }
-
-  .gf-main-panel .gf-sortings {
-    margin-top: 3px;
-  }
-
-  .gf-main-panel .notch {
-    padding: 1px 2px 2px;
-  }
-
-  .gf-main-panel .notch-label {
-    font-size: 0.36rem;
-  }
-
-  .gf-main-row {
-    gap: 5px;
-    margin: 5px 0;
+    width: 52px;
+    height: 66px;
+    font-size: 1.4rem;
   }
 
   .gf-main-card {
-    height: 70px;
+    height: 92px;
   }
 
   .gf-main-card .gf-card-ribbon {
-    font-size: 0.3rem;
+    font-size: 0.4rem;
+  }
+
+  .gf-card-badge {
+    min-width: 40px;
+    height: 24px;
+    font-size: 0.85rem;
+  }
+
+  .gf-main-panel .tile--xs {
+    width: 24px;
+    height: 28px;
+  }
+
+  .gf-main-panel .tile--xs .tile-num {
+    font-size: 0.62rem;
   }
 
   .gf-main-panel .gf-comparisons {
-    padding: 0 16px;
-  }
-
-  .gf-main-panel .compare-slot {
-    min-height: 20px;
-  }
-
-  .gf-main-panel .compare-tiles {
-    min-height: 0;
+    padding: 0 20px;
   }
 
   .gf-bottom {
     position: static;
-    grid-area: bottom;
-    gap: 4px;
-    padding: 3px 5px;
-    border: 1px solid var(--gf-line);
-    border-radius: 12px;
-    background: rgba(33, 16, 46, 0.96);
+    gap: 8px;
+    padding: 0;
+    border: 0;
+    background: none;
   }
 
   .gf-gotfive {
-    min-height: 42px;
+    min-height: 56px;
   }
 
   .gf-end-turn {
-    padding: 5px 8px;
-  }
-
-  .gf-result {
-    margin-top: 4px;
-    padding: 5px;
-  }
-
-  .gf-result .result-line p {
-    font-size: 0.62rem;
-  }
-
-  .gf-main-hint {
-    display: none;
+    padding: 9px 12px;
   }
 
   .gf-fiche-row {
@@ -3874,7 +3818,7 @@ button.tile:hover {
   }
 
   .gf-cell {
-    min-height: 32px;
+    min-height: 34px;
   }
 
   .gf-cell.is-offpage {
