@@ -531,6 +531,7 @@ function doReveal(colorIndex) {
   app.menuOpen = false;
   app.draftSlot = null;
   runAction((game) => reveal(game, colorIndex));
+  focusSelector('.gf-visible-row .tile');
 }
 
 function doSkipReveal() {
@@ -670,6 +671,7 @@ function openReveal() {
   app.menuOpen = false;
   app.draftSlot = null;
   render();
+  focusSelector('.gf-inline-reveal .gf-color-card');
 }
 
 function closeReveal() {
@@ -1374,10 +1376,11 @@ function gfVisiblePanel(player) {
           ? h(
               'button',
               {
-                class: 'gf-add-tile',
+                class: `gf-add-tile${app.revealOpen ? ' is-open' : ''}`,
                 type: 'button',
                 'aria-label': t('gf.revealTitle'),
-                onclick: openReveal,
+                'aria-expanded': String(app.revealOpen),
+                onclick: app.revealOpen ? closeReveal : openReveal,
               },
               '+',
             )
@@ -1388,6 +1391,20 @@ function gfVisiblePanel(player) {
             )
         : null,
     ),
+    app.revealOpen
+      ? h(
+          'div',
+          { class: 'gf-inline-reveal' },
+          h(
+            'div',
+            { class: 'gf-inline-reveal-head' },
+            h('strong', { text: t('gf.revealTitle') }),
+            h('button', { class: 'gf-inline-cancel', type: 'button', onclick: closeReveal }, t('common.cancel')),
+          ),
+          h('p', { class: 'gf-inline-hint', text: t('gf.revealHint') }),
+          gfRevealChoices(),
+        )
+      : null,
   );
 }
 
@@ -1631,38 +1648,32 @@ function gfBottomBar(player) {
   );
 }
 
-function gfRevealModal() {
+function gfRevealChoices() {
   const game = app.game;
   const available = canRevealColors(game);
   const counts = COLORS.map(
     (_, colorIndex) => game.supply.filter((n) => tile(n).colorIndex === colorIndex).length,
   );
-  return gfOverlay(
-    'gf-reveal-modal',
-    t('gf.revealTitle'),
-    closeReveal,
-    h('p', { class: 'gf-modal-sub', text: t('gf.revealHint') }),
-    h(
-      'div',
-      { class: 'gf-color-grid' },
-      COLORS.map((color, index) =>
-        h(
-          'button',
-          {
-            class: `gf-color-card gf-color-card--${color.id}`,
-            type: 'button',
-            style: { '--gf-color': color.hex, '--gf-color-ink': color.ink },
-            disabled: !available[index],
-            onclick: () => doReveal(index),
-          },
-          h('span', { class: 'gf-color-symbol', 'aria-hidden': 'true', text: color.symbol }),
-          gfEyes(color.id),
-          h('span', { class: 'gf-color-name', text: colorName(color) }),
-          h('span', {
-            class: 'gf-color-count',
-            text: `×${counts[index]}`,
-          }),
-        ),
+  return h(
+    'div',
+    { class: 'gf-color-grid gf-color-grid--inline' },
+    COLORS.map((color, index) =>
+      h(
+        'button',
+        {
+          class: `gf-color-card gf-color-card--${color.id}`,
+          type: 'button',
+          style: { '--gf-color': color.hex, '--gf-color-ink': color.ink },
+          disabled: !available[index],
+          onclick: () => doReveal(index),
+        },
+        h('span', { class: 'gf-color-symbol', 'aria-hidden': 'true', text: color.symbol }),
+        gfEyes(color.id),
+        h('span', { class: 'gf-color-name', text: colorName(color) }),
+        h('span', {
+          class: 'gf-color-count',
+          text: `×${counts[index]}`,
+        }),
       ),
     ),
   );
@@ -1867,12 +1878,11 @@ function gfMenuDrawer(player) {
 
 function gfHasOverlay() {
   if (app.screen !== 'turn' || !app.game) {
-    return app.menuOpen || app.revealOpen || app.draftSlot !== null;
+    return app.menuOpen || app.draftSlot !== null;
   }
   const phase = app.game.phase;
   return (
     app.menuOpen ||
-    app.revealOpen ||
     app.draftSlot !== null ||
     (phase === PHASES.CHOOSE_TILE && app.selectedTile !== null) ||
     phase === PHASES.CHOOSE_CLUE ||
@@ -1910,7 +1920,6 @@ function renderTurn() {
       gfBottomBar(player),
     ),
     app.menuOpen ? gfMenuDrawer(player) : null,
-    app.revealOpen ? gfRevealModal(player) : null,
     gfClueModal(player),
     app.draftSlot !== null ? gfDraftModal(player) : null,
   );

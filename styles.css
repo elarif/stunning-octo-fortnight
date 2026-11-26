@@ -5445,3 +5445,60 @@ body.gf-no-scroll {
     grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
   }
 }
+
+.gf-add-tile.is-open {
+  border-color: var(--accent-2);
+  color: var(--accent);
+  background: rgba(242, 185, 75, 0.12);
+}
+
+.gf-inline-reveal {
+  margin-top: 6px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(42, 23, 53, 0.04);
+}
+
+.gf-inline-reveal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.gf-inline-reveal-head strong {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.gf-inline-cancel {
+  min-height: 40px;
+  padding: 0 4px;
+  border: 0;
+  color: var(--muted);
+  background: transparent;
+  font: inherit;
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.gf-inline-hint {
+  margin: 2px 0 5px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
+.gf-color-grid--inline {
+  margin-top: 2px;
+}
+
+.gf-color-grid--inline .gf-color-card {
+  padding: 6px 2px 4px;
+}
