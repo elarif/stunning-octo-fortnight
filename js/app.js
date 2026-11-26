@@ -1576,37 +1576,40 @@ function gfMainPanel(player) {
     ),
     h('div', { class: 'gf-comparisons' }, gfComparisonClues(player, clue)),
     game.phase === PHASES.END ? h('div', { class: 'gf-result' }, renderClueResult()) : null,
+    h('div', { class: 'gf-main-claim' }, gfGotFiveButton(player)),
     h('p', { class: 'gf-main-hint', text: t('gf.tapHint') }),
     h('p', { class: 'gf-main-hint', text: t('gf.crossHint') }),
   );
 }
 
-function gfBottomBar(player) {
-  const game = app.game;
+function gfGotFiveButton(player) {
   const count = player.draft.filter((value) => value !== '').length;
   const complete = draftComplete(player);
   return h(
+    'button',
+    {
+      class: `gf-gotfive${complete ? ' is-ready' : ''}`,
+      type: 'button',
+      onclick: openClaim,
+      disabled: player.eliminated || player.hasClaimed,
+    },
+    h('span', { class: 'gf-gotfive-label', text: t('common.gotFive') }),
+    h('span', { class: 'gf-gotfive-sep', 'aria-hidden': 'true', text: '·' }),
+    h('span', { class: 'gf-gotfive-count', text: t('gf.claimCount', { n: count }) }),
+  );
+}
+
+function gfBottomBar(player) {
+  const game = app.game;
+  if (game.phase !== PHASES.END) return null;
+  return h(
     'div',
     { class: 'gf-bottom' },
-    game.phase === PHASES.END
-      ? h(
-          'button',
-          { class: 'gf-end-turn', type: 'button', onclick: doEndTurn },
-          h('strong', { text: t('gf.endTurn') }),
-          h('span', { text: t('gf.passTo', { name: nextPlayerName() }) }),
-        )
-      : null,
     h(
       'button',
-      {
-        class: `gf-gotfive${complete ? ' is-ready' : ''}`,
-        type: 'button',
-        onclick: openClaim,
-        disabled: player.eliminated || player.hasClaimed,
-      },
-      h('span', { class: 'gf-gotfive-label', text: t('common.gotFive') }),
-      h('span', { class: 'gf-gotfive-sep', 'aria-hidden': 'true', text: '·' }),
-      h('span', { class: 'gf-gotfive-count', text: t('gf.claimCount', { n: count }) }),
+      { class: 'gf-end-turn', type: 'button', onclick: doEndTurn },
+      h('strong', { text: t('gf.endTurn') }),
+      h('span', { text: t('gf.passTo', { name: nextPlayerName() }) }),
     ),
   );
 }
@@ -1881,8 +1884,12 @@ function renderTurn() {
       'div',
       { class: 'gf-turn-grid', inert: overlayOpen ? true : null },
       gfFichePanel(player),
-      gfMainPanel(player),
-      gfVisiblePanel(player),
+      h(
+        'div',
+        { class: 'gf-tiles-row' },
+        gfMainPanel(player),
+        gfVisiblePanel(player),
+      ),
       gfBottomBar(player),
     ),
     app.menuOpen ? gfMenuDrawer(player) : null,

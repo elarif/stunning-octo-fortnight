@@ -5355,3 +5355,34 @@ body.gf-no-scroll {
     margin-left: auto;
   }
 }
+
+.gf-tiles-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gf-main-claim {
+  max-width: 440px;
+  margin: 8px auto 0;
+}
+
+.gf-main-claim .gf-gotfive {
+  width: 100%;
+}
+
+@media (min-width: 760px) {
+  .gf-tiles-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+  }
+
+  .gf-tiles-row .gf-main-panel,
+  .gf-tiles-row .gf-visible-panel {
+    width: auto;
+    max-width: none;
+    margin: 0;
+  }
+}
