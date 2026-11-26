@@ -398,12 +398,14 @@ function openTutorial() {
   app.screen = 'tutorial';
   app.langOpen = false;
   render();
+  window.scrollTo(0, 0);
 }
 
 function closeTutorial() {
   app.screen = 'home';
   app.tutorialStep = 0;
   render();
+  window.scrollTo(0, 0);
 }
 
 function tutorialGo(delta) {
@@ -821,53 +823,221 @@ function renderHome() {
   );
 }
 
-function tutorialFiche() {
+const TUTORIAL_AUTO = new Set([3, 6, 9, 11, 18, 21, 24, 29, 33, 36, 39, 43, 48, 49]);
+const TUTORIAL_MANUAL = new Set([12, 28, 54, 57]);
+
+function tutorialDemoPlayer() {
+  return {
+    stand: [3, 16, 29, 42, 55],
+    draft: ['8', '16', '34', '37', '55'],
+    sorting: [[], [11], [21], [36], [], [59]],
+    comparisons: [[{ n: 8, same: false }], [], [{ n: 58, same: false }], [], []],
+  };
+}
+
+function tutorialTopbar() {
   return h(
-    'div',
-    { class: 'tutorial-fiche', 'aria-hidden': 'true' },
-    COLORS.map((color, colorIndex) =>
+    'header',
+    { class: 'gf-topbar' },
+    h(
+      'div',
+      { class: 'gf-topbar-who' },
+      h('span', { class: 'gf-avatar', text: 'A' }),
       h(
         'div',
-        { class: 'tutorial-fiche-row' },
-        h('span', { class: 'tutorial-fiche-stripe', style: { background: color.hex } }),
-        tilesForColor(colorIndex)
-          .slice(0, 5)
-          .map((cell) =>
-            h(
-              'span',
-              { class: 'tutorial-fiche-cell', style: { '--tc': color.hex, '--ti': color.ink } },
-              String(cell.n),
-            ),
-          ),
+        { class: 'gf-topbar-id' },
+        h('span', { class: 'gf-wordmark', text: 'GOT FIVE!' }),
+        h('strong', { class: 'gf-player-name', text: 'ALICE' }),
+        h('span', { class: 'gf-turn-label', text: t('gf.turnLabel', { n: 8 }) }),
       ),
     ),
+    h('span', { class: 'gf-menu-btn', text: '☰' }),
   );
 }
 
-function tutorialHand() {
+function tutorialFiche(step) {
+  const current = 58;
   return h(
-    'div',
-    { class: 'tutorial-hand', 'aria-hidden': 'true' },
-    COLORS.map((color) =>
+    'section',
+    { class: `gf-panel gf-fiche-panel${step === 4 ? ' tutorial-spot' : ''}` },
+    h(
+      'div',
+      { class: 'gf-panel-head' },
+      h('h2', { text: t('gf.fiche') }),
+      h(
+        'div',
+        { class: 'gf-fiche-counts' },
+        h(
+          'span',
+          { class: 'gf-fiche-count' },
+          h('span', { text: t('gf.auto') }),
+          h('strong', { text: String(TUTORIAL_AUTO.size) }),
+        ),
+        h(
+          'span',
+          { class: 'gf-fiche-count gf-fiche-count--manual' },
+          h('span', { text: t('gf.manual') }),
+          h('strong', { text: String(TUTORIAL_MANUAL.size) }),
+        ),
+      ),
+    ),
+    h(
+      'div',
+      { class: 'gf-fiche-grid' },
+      COLORS.map((color, colorIndex) =>
+        h(
+          'div',
+          { class: `gf-fiche-row${colorIndex === 3 ? ' is-focus' : ''}` },
+          h(
+            'span',
+            { class: 'gf-row-stripe', style: { background: color.hex }, 'aria-hidden': 'true' },
+            h('span', { class: 'gf-row-symbol', text: color.symbol }),
+          ),
+          tilesForColor(colorIndex).map((cell) => {
+            const data = tile(cell.n);
+            const classes = ['gf-cell', `gf-cell--${data.color.id}`];
+            if (TUTORIAL_AUTO.has(cell.n)) classes.push('is-auto');
+            if (TUTORIAL_MANUAL.has(cell.n)) classes.push('is-manual');
+            if (cell.n === current) classes.push('is-current');
+            if (cell.n > 40) classes.push('is-offpage');
+            return h(
+              'span',
+              {
+                class: classes.join(' '),
+                style: { '--gf-cell-color': data.color.hex, '--gf-cell-ink': data.color.ink },
+              },
+              h('span', { class: 'gf-cell-num', text: String(cell.n) }),
+              dotsEl(data.dots),
+            );
+          }),
+        ),
+      ),
+    ),
+    h(
+      'div',
+      { class: 'gf-fiche-foot' },
+      h('span', { class: 'gf-page-btn', text: t('gf.pageNext') }),
+      h('span', { class: 'gf-order-btn is-active', text: `⇅ ${t('gf.orderHand')}` }),
+      h('span', { class: 'gf-page-btn gf-clear-manual', text: t('sheet.clear') }),
+      h(
+        'div',
+        { class: 'gf-fiche-legend' },
+        h(
+          'span',
+          { class: 'gf-legend' },
+          h('span', { class: 'gf-swatch gf-swatch--auto', 'aria-hidden': 'true' }),
+          t('gf.auto'),
+        ),
+        h(
+          'span',
+          { class: 'gf-legend' },
+          h('span', { class: 'gf-swatch gf-swatch--manual', 'aria-hidden': 'true' }),
+          t('gf.manual'),
+        ),
+      ),
+    ),
+    h('p', { class: 'gf-fiche-hint', text: t('gf.crossHint') }),
+  );
+}
+
+function tutorialVisiblePanel(step) {
+  const choosing = step === 2;
+  return h(
+    'section',
+    { class: `gf-panel gf-visible-panel${step === 1 ? ' tutorial-spot' : ''}` },
+    h(
+      'div',
+      { class: 'gf-panel-head' },
+      h('h2', { text: choosing ? t('gf.chooseVisible') : t('gf.visibleTiles') }),
+      h('span', { class: 'gf-reserve', text: t('gf.reserve', { n: 37 }) }),
+    ),
+    h(
+      'div',
+      { class: 'gf-visible-help' },
       h(
         'span',
-        { class: 'tutorial-hand-tile', style: { '--tc': color.hex, '--ti': color.ink } },
-        h('span', { class: 'tutorial-ribbon', text: t('common.gotFive') }),
-        gfEyes(color.id),
-        h('span', { class: 'tutorial-badge', text: t('sheet.none') }),
+        { class: `gf-visible-help-step${step === 1 ? ' is-active' : ''}` },
+        h('span', { class: 'gf-visible-help-key', 'aria-hidden': 'true', text: '+' }),
+        h('span', { text: t('gf.addTileHint') }),
+      ),
+      h(
+        'span',
+        { class: `gf-visible-help-step${choosing ? ' is-active' : ''}` },
+        h('span', { class: 'gf-visible-help-key', 'aria-hidden': 'true', text: '›' }),
+        h('span', { text: t('gf.chooseVisibleHint') }),
       ),
     ),
+    h(
+      'div',
+      { class: 'gf-visible-row' },
+      [22, 51, 56, 33, 60].map((n) =>
+        tileEl(n, { size: 'lg', selected: choosing && n === 22 }),
+      ),
+      h('span', { class: 'gf-add-tile', text: '+' }),
+    ),
+    choosing
+      ? h(
+          'div',
+          { class: 'gf-inline-reveal gf-inline-clue tutorial-spot' },
+          h(
+            'div',
+            { class: 'gf-inline-reveal-head' },
+            h('strong', { text: t('gf.chooseTileTitle', { n: 22 }) }),
+            h('span', { class: 'gf-inline-cancel', text: t('common.change') }),
+          ),
+          h('p', { class: 'gf-inline-hint', text: t('gf.chooseTileHint') }),
+          h(
+            'div',
+            { class: 'gf-clue-actions' },
+            h('span', { class: 'gf-btn gf-btn--clue', text: t('common.sort') }),
+            h('span', { class: 'gf-btn gf-btn--clue', text: t('common.compare') }),
+          ),
+        )
+      : null,
   );
 }
 
-function tutorialVisual(step) {
-  if (step === 2) return tutorialFiche();
-  if (step === 3) return tutorialHand();
-  if (step === 5) return h('div', { class: 'tutorial-gotfive', text: t('common.gotFive') });
+function tutorialMainPanel(step) {
+  const demo = tutorialDemoPlayer();
+  const compare = step === 3;
+  const current = step === 3 || step === 4 ? { type: 'compare', slot: 2, tile: 58 } : null;
   return h(
-    'div',
-    { class: 'tutorial-tiles', 'aria-hidden': 'true' },
-    [4, 16, 28, 40, 55].map((n) => tileEl(n, { size: 'lg' })),
+    'section',
+    { class: `gf-panel gf-main-panel${compare ? ' tutorial-spot' : ''}` },
+    h(
+      'div',
+      { class: 'gf-panel-head' },
+      h('h2', { text: t('gf.main') }),
+      compare
+        ? h(
+            'div',
+            { class: 'gf-main-compare' },
+            h('span', { class: 'gf-main-count', text: t('gf.comparePrompt') }),
+            h('span', { class: 'gf-inline-cancel', text: t('common.change') }),
+          )
+        : null,
+    ),
+    h('div', { class: 'gf-sortings' }, gfSortingClues(demo, null)),
+    h(
+      'div',
+      { class: 'gf-main-row' },
+      h('span', { class: 'gf-order-sign', 'aria-hidden': 'true', text: '−' }),
+      demo.stand.map((_, index) => gfMainCard(demo, index, { demo: true, compare })),
+      h('span', { class: 'gf-order-sign', 'aria-hidden': 'true', text: '+' }),
+    ),
+    h('div', { class: 'gf-comparisons' }, gfComparisonClues(demo, current)),
+    h(
+      'div',
+      { class: `gf-main-claim${step === 5 ? ' tutorial-spot' : ''}` },
+      h(
+        'div',
+        { class: `gf-gotfive${step === 5 ? ' is-ready' : ''}` },
+        h('span', { class: 'gf-gotfive-label', text: t('common.gotFive') }),
+        h('span', { class: 'gf-gotfive-sep', 'aria-hidden': 'true', text: '·' }),
+        h('span', { class: 'gf-gotfive-count', text: t('gf.claimCount', { n: 5 }) }),
+      ),
+    ),
+    h('p', { class: 'gf-main-hint', text: t('gf.tapHint') }),
   );
 }
 
@@ -875,46 +1045,88 @@ function renderTutorial() {
   const step = app.tutorialStep;
   const total = 6;
   const last = step === total - 1;
-  const actions = [
-    step > 0
-      ? h(
-          'button',
-          { class: 'btn btn--ghost', type: 'button', onclick: () => tutorialGo(-1) },
-          t('tutorial.previous'),
-        )
-      : h('span', {}),
-    last
-      ? h(
-          'button',
-          { class: 'btn btn--primary tutorial-play', type: 'button', onclick: requestNewGame },
-          t('tutorial.play'),
-        )
-      : h(
-          'button',
-          { class: 'btn btn--primary tutorial-next', type: 'button', onclick: () => tutorialGo(1) },
-          t('tutorial.next'),
-        ),
-  ];
+  requestAnimationFrame(() => {
+    if (step === 0) return;
+    const target = document.querySelector('.tutorial-spot');
+    const coach = document.querySelector('.tutorial-coach');
+    if (!target || !coach) return;
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    const offset = coach.offsetHeight + 16;
+    const tall = target.offsetHeight > window.innerHeight - offset - 60;
+    target.style.scrollMarginTop = `${offset}px`;
+    target.scrollIntoView({
+      block: tall ? 'start' : 'center',
+      behavior: reduce ? 'auto' : 'smooth',
+    });
+  });
   return h(
     'main',
     { class: 'screen screen--tutorial' },
     topBar(t('tutorial.title'), closeTutorial, renderLangSwitcher()),
     h(
-      'article',
-      { class: 'card tutorial-card' },
-      h('p', { class: 'eyebrow', text: t('tutorial.eyebrow') }),
-      h('p', { class: 'tutorial-step', text: t('tutorial.step', { n: step + 1, total }) }),
-      h('h2', { text: t(`tutorial.step${step + 1}Title`) }),
-      tutorialVisual(step),
-      h('p', { class: 'tutorial-text', text: t(`tutorial.step${step + 1}Text`) }),
+      'section',
+      { class: 'card tutorial-coach', role: 'region', 'aria-label': t('tutorial.title') },
       h(
         'div',
-        { class: 'tutorial-dots', 'aria-hidden': 'true' },
-        Array.from({ length: total }, (_, index) =>
-          h('span', { class: `tutorial-dot${index === step ? ' is-active' : ''}` }),
+        { class: 'tutorial-coach-head' },
+        h('span', { class: 'tutorial-step', text: t('tutorial.step', { n: step + 1, total }) }),
+        h(
+          'button',
+          {
+            class: 'tutorial-close',
+            type: 'button',
+            onclick: closeTutorial,
+            'aria-label': t('common.close'),
+          },
+          '✕',
         ),
       ),
-      h('div', { class: 'tutorial-actions' }, actions),
+      h(
+        'div',
+        { class: 'tutorial-coach-copy', 'aria-live': 'polite', 'aria-atomic': 'true' },
+        h('h2', { text: t(`tutorial.step${step + 1}Title`) }),
+        h('p', { class: 'tutorial-text', text: t(`tutorial.step${step + 1}Text`) }),
+      ),
+      h(
+        'div',
+        { class: 'tutorial-actions' },
+        step > 0
+          ? h(
+              'button',
+              { class: 'btn btn--ghost', type: 'button', onclick: () => tutorialGo(-1) },
+              t('tutorial.previous'),
+            )
+          : h('span', { class: 'tutorial-spacer' }),
+        h(
+          'div',
+          { class: 'tutorial-dots', 'aria-hidden': 'true' },
+          Array.from({ length: total }, (_, index) =>
+            h('span', { class: `tutorial-dot${index === step ? ' is-active' : ''}` }),
+          ),
+        ),
+        last
+          ? h(
+              'button',
+              { class: 'btn btn--primary tutorial-play', type: 'button', onclick: requestNewGame },
+              t('tutorial.play'),
+            )
+          : h(
+              'button',
+              { class: 'btn btn--primary tutorial-next', type: 'button', onclick: () => tutorialGo(1) },
+              t('tutorial.next'),
+            ),
+      ),
+    ),
+    h(
+      'div',
+      { class: 'gf-turn tutorial-demo', 'aria-hidden': 'true' },
+      tutorialTopbar(),
+      h(
+        'div',
+        { class: 'gf-turn-grid' },
+        tutorialFiche(step),
+        h('div', { class: 'gf-tiles-row' }, tutorialVisiblePanel(step), tutorialMainPanel(step)),
+      ),
     ),
     h('p', { class: 'fineprint' }, t('tutorial.fineprint')),
   );
@@ -1301,7 +1513,6 @@ function gfMainCard(player, index, options = {}) {
       });
   const attrs = {
     class: classes.join(' '),
-    type: 'button',
     style: {
       '--gf-card': color.hex,
       '--gf-card-ink': color.ink,
@@ -1309,11 +1520,14 @@ function gfMainCard(player, index, options = {}) {
     },
     'aria-label': label,
   };
-  if (options.onClick) attrs.onclick = options.onClick;
-  else if (options.compare) attrs.onclick = () => doChooseCompareSlot(index);
-  else if (options.editable) attrs.onclick = () => openDraft(index);
+  if (!options.demo) {
+    attrs.type = 'button';
+    if (options.onClick) attrs.onclick = options.onClick;
+    else if (options.compare) attrs.onclick = () => doChooseCompareSlot(index);
+    else if (options.editable) attrs.onclick = () => openDraft(index);
+  }
   return h(
-    'button',
+    options.demo ? 'div' : 'button',
     attrs,
     h('span', { class: 'gf-card-ribbon', text: t('common.gotFive') }),
     gfEyes(color.id),
