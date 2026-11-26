@@ -4520,3 +4520,39 @@ body.gf-no-scroll {
 .gf-page-btn {
   min-height: 44px;
 }
+
+.gf-fiche-grid {
+  gap: 6px;
+}
+
+.gf-fiche-row {
+  gap: 6px;
+}
+
+@media (min-width: 760px) {
+  .gf-turn {
+    max-width: 1000px;
+  }
+
+  .gf-fiche-grid {
+    gap: 8px;
+  }
+
+  .gf-fiche-row {
+    gap: 8px;
+  }
+}
+
+@media (min-width: 760px) {
+  .gf-turn {
+    max-width: 1044px;
+  }
+
+  .gf-fiche-grid {
+    gap: 12px;
+  }
+
+  .gf-fiche-row {
+    gap: 12px;
+  }
+}
