@@ -4971,3 +4971,49 @@ body.gf-no-scroll {
     margin-bottom: 0;
   }
 }
+
+.gf-order-btn {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  background: var(--white);
+  box-shadow: 0 3px 0 #cbb99a;
+  font: inherit;
+  font-size: 0.62rem;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.gf-order-btn:hover {
+  background: #fff;
+}
+
+.gf-order-btn.is-active {
+  background: var(--accent-2);
+  box-shadow: 0 3px 0 #9d6f12;
+}
+
+.gf-order-btn:active {
+  transform: translateY(1px);
+}
+
+.gf-order-icon {
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+@media (max-width: 759px) {
+  .gf-fiche-foot {
+    justify-content: flex-start;
+  }
+
+  .gf-fiche-legend {
+    margin-left: auto;
+  }
+}

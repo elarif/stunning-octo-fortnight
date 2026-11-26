@@ -48,6 +48,7 @@ const app = {
   draftSlot: null,
   draftError: null,
   fichePage: 0,
+  ficheOrder: readFicheOrder(),
   rulesReturn: null,
   botPlayerId: null,
   botTimer: null,
@@ -609,6 +610,25 @@ function doEndTurn() {
 
 function focusSelector(selector) {
   requestAnimationFrame(() => document.querySelector(selector)?.focus());
+}
+
+function readFicheOrder() {
+  try {
+    return localStorage.getItem('gotfive.ficheOrder') === 'hand' ? 'hand' : 'color';
+  } catch {
+    return 'color';
+  }
+}
+
+function toggleFicheOrder() {
+  app.ficheOrder = app.ficheOrder === 'hand' ? 'color' : 'hand';
+  try {
+    localStorage.setItem('gotfive.ficheOrder', app.ficheOrder);
+  } catch {
+    // Le choix reste valable pour la session si le stockage est indisponible.
+  }
+  render();
+  focusSelector('.gf-order-btn');
 }
 
 function openMenu() {
@@ -1298,7 +1318,10 @@ function gfFichePanel(player) {
     h(
       'div',
       { class: 'gf-fiche-grid' },
-      COLORS.map((color, index) => gfFicheRow(color, index, player, visible, focus)),
+      (app.ficheOrder === 'hand'
+        ? player.standColors.map((colorIndex) => ({ color: COLORS[colorIndex], colorIndex }))
+        : COLORS.map((color, colorIndex) => ({ color, colorIndex }))
+      ).map(({ color, colorIndex }) => gfFicheRow(color, colorIndex, player, visible, focus)),
     ),
     h(
       'div',
@@ -1307,6 +1330,19 @@ function gfFichePanel(player) {
         'button',
         { class: 'gf-page-btn', type: 'button', onclick: toggleFichePage },
         app.fichePage === 0 ? t('gf.pageNext') : t('gf.pagePrev'),
+      ),
+      h(
+        'button',
+        {
+          class: `gf-order-btn${app.ficheOrder === 'hand' ? ' is-active' : ''}`,
+          type: 'button',
+          'aria-pressed': String(app.ficheOrder === 'hand'),
+          'aria-label': t('gf.orderHandAria'),
+          title: t('gf.orderHandAria'),
+          onclick: toggleFicheOrder,
+        },
+        h('span', { class: 'gf-order-icon', 'aria-hidden': 'true', text: '⇅' }),
+        t('gf.orderHand'),
       ),
       h(
         'div',
