@@ -5531,3 +5531,53 @@ body.gf-no-scroll {
   gap: 2px;
   min-width: 0;
 }
+
+@keyframes gf-guide-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 rgba(245, 196, 81, 0));
+  }
+  50% {
+    filter: drop-shadow(0 0 7px rgba(245, 196, 81, 0.95));
+  }
+}
+
+@keyframes gf-guide-ring {
+  0%,
+  100% {
+    outline-color: rgba(245, 196, 81, 0.15);
+  }
+  50% {
+    outline-color: rgba(245, 196, 81, 1);
+  }
+}
+
+.gf-add-tile.is-guiding,
+.tile.is-guiding {
+  outline: 3px solid rgba(245, 196, 81, 0.15);
+  outline-offset: 2px;
+  animation: gf-guide-ring 1.6s ease-in-out infinite, gf-guide-glow 1.6s ease-in-out infinite;
+}
+
+.gf-main-card.is-compare {
+  outline-color: rgba(245, 196, 81, 0.15);
+  animation: gf-guide-ring 1.6s ease-in-out infinite, gf-guide-glow 1.6s ease-in-out infinite;
+}
+
+.tile.is-guiding.is-highlight {
+  animation: tile-pop 0.55s ease, gf-guide-ring 1.6s ease-in-out infinite, gf-guide-glow 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gf-add-tile.is-guiding,
+  .tile.is-guiding {
+    animation: none;
+    outline-color: rgba(245, 196, 81, 0.9);
+    filter: drop-shadow(0 0 4px rgba(245, 196, 81, 0.7));
+  }
+  .gf-main-card.is-compare {
+    animation: none;
+    outline-color: rgba(245, 196, 81, 0.95);
+    filter: drop-shadow(0 0 4px rgba(245, 196, 81, 0.7));
+  }
+}

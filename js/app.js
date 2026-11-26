@@ -103,12 +103,13 @@ function dotsEl(count) {
 }
 
 function tileEl(n, options = {}) {
-  const { size = 'md', onclick = null, selected = false, highlight = false, tilt = false, badge = null, disabled = false } = options;
+  const { size = 'md', onclick = null, selected = false, highlight = false, tilt = false, badge = null, disabled = false, guide = false } = options;
   const data = tile(n);
   const classes = ['tile', `tile--${data.color.id}`, `tile--${size}`];
   if (selected) classes.push('is-selected');
   if (highlight) classes.push('is-highlight');
   if (tilt) classes.push('is-tilted');
+  if (guide) classes.push('is-guiding');
 
   const content = [
     h('span', { class: 'tile-glyph', 'aria-hidden': 'true', text: data.color.symbol }),
@@ -1381,6 +1382,7 @@ function gfVisiblePanel(player) {
           onclick: selecting ? () => selectPublicTile(n) : null,
           selected: selected === n,
           highlight: game.lastRevealed === n && game.revealed !== null,
+          guide: selecting && app.selectedTile === null,
         }),
       ),
       game.phase === PHASES.REVEAL
@@ -1388,7 +1390,7 @@ function gfVisiblePanel(player) {
           ? h(
               'button',
               {
-                class: `gf-add-tile${app.revealOpen ? ' is-open' : ''}`,
+                class: `gf-add-tile${app.revealOpen ? ' is-open' : ' is-guiding'}`,
                 type: 'button',
                 'aria-label': t('gf.revealTitle'),
                 'aria-expanded': String(app.revealOpen),
