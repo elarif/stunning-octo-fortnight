@@ -10,7 +10,7 @@ function usedKeys() {
     [...source.matchAll(/(?<![A-Za-z0-9_$])t\('([^']+)'/g)].map((match) => match[1]),
   );
 
-  for (const screen of ['home', 'setup', 'pass', 'notes', 'turn', 'bot', 'gameover', 'review', 'rules']) {
+  for (const screen of ['home', 'setup', 'pass', 'notes', 'turn', 'bot', 'gameover', 'review', 'rules', 'tutorial']) {
     keys.add(`titles.${screen}`);
   }
   for (const code of LANGUAGES) keys.add(`language.${code}`);

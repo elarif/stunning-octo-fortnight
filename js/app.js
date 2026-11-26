@@ -60,6 +60,7 @@ const app = {
   updateTimer: null,
   reviewPov: null,
   reviewStep: 0,
+  tutorialStep: 0,
 };
 
 function appendChildren(node, children) {
@@ -385,6 +386,25 @@ function goHome() {
   app.botPlayerId = null;
   app.botMessage = null;
   render();
+}
+
+function openTutorial() {
+  app.tutorialStep = 0;
+  app.screen = 'tutorial';
+  app.langOpen = false;
+  render();
+}
+
+function closeTutorial() {
+  app.screen = 'home';
+  app.tutorialStep = 0;
+  render();
+}
+
+function tutorialGo(delta) {
+  app.tutorialStep = Math.max(0, Math.min(5, app.tutorialStep + delta));
+  render();
+  focusSelector('.tutorial-next, .tutorial-play');
 }
 
 function requestNewGame() {
@@ -774,10 +794,110 @@ function renderHome() {
             app.saved.phase === PHASES.GAME_OVER ? t('home.lastGame') : t('home.continue'),
           )
         : null,
+      h('button', { class: 'btn btn--secondary btn--wide home-tutorial', type: 'button', onclick: openTutorial }, t('home.tutorial')),
       h('button', { class: 'btn btn--ghost btn--wide', type: 'button', onclick: openRules }, t('home.rules')),
     ),
     app.notice ? h('p', { class: 'notice', text: app.notice }) : null,
     h('p', { class: 'fineprint' }, t('home.fineprint')),
+  );
+}
+
+function tutorialFiche() {
+  return h(
+    'div',
+    { class: 'tutorial-fiche', 'aria-hidden': 'true' },
+    COLORS.map((color, colorIndex) =>
+      h(
+        'div',
+        { class: 'tutorial-fiche-row' },
+        h('span', { class: 'tutorial-fiche-stripe', style: { background: color.hex } }),
+        tilesForColor(colorIndex)
+          .slice(0, 5)
+          .map((cell) =>
+            h(
+              'span',
+              { class: 'tutorial-fiche-cell', style: { '--tc': color.hex, '--ti': color.ink } },
+              String(cell.n),
+            ),
+          ),
+      ),
+    ),
+  );
+}
+
+function tutorialHand() {
+  return h(
+    'div',
+    { class: 'tutorial-hand', 'aria-hidden': 'true' },
+    COLORS.map((color) =>
+      h(
+        'span',
+        { class: 'tutorial-hand-tile', style: { '--tc': color.hex, '--ti': color.ink } },
+        h('span', { class: 'tutorial-ribbon', text: t('common.gotFive') }),
+        gfEyes(color.id),
+        h('span', { class: 'tutorial-badge', text: t('sheet.none') }),
+      ),
+    ),
+  );
+}
+
+function tutorialVisual(step) {
+  if (step === 2) return tutorialFiche();
+  if (step === 3) return tutorialHand();
+  if (step === 5) return h('div', { class: 'tutorial-gotfive', text: t('common.gotFive') });
+  return h(
+    'div',
+    { class: 'tutorial-tiles', 'aria-hidden': 'true' },
+    [4, 16, 28, 40, 55].map((n) => tileEl(n, { size: 'lg' })),
+  );
+}
+
+function renderTutorial() {
+  const step = app.tutorialStep;
+  const total = 6;
+  const last = step === total - 1;
+  const actions = [
+    step > 0
+      ? h(
+          'button',
+          { class: 'btn btn--ghost', type: 'button', onclick: () => tutorialGo(-1) },
+          t('tutorial.previous'),
+        )
+      : h('span', {}),
+    last
+      ? h(
+          'button',
+          { class: 'btn btn--primary tutorial-play', type: 'button', onclick: requestNewGame },
+          t('tutorial.play'),
+        )
+      : h(
+          'button',
+          { class: 'btn btn--primary tutorial-next', type: 'button', onclick: () => tutorialGo(1) },
+          t('tutorial.next'),
+        ),
+  ];
+  return h(
+    'main',
+    { class: 'screen screen--tutorial' },
+    topBar(t('tutorial.title'), closeTutorial, renderLangSwitcher()),
+    h(
+      'article',
+      { class: 'card tutorial-card' },
+      h('p', { class: 'eyebrow', text: t('tutorial.eyebrow') }),
+      h('p', { class: 'tutorial-step', text: t('tutorial.step', { n: step + 1, total }) }),
+      h('h2', { text: t(`tutorial.step${step + 1}Title`) }),
+      tutorialVisual(step),
+      h('p', { class: 'tutorial-text', text: t(`tutorial.step${step + 1}Text`) }),
+      h(
+        'div',
+        { class: 'tutorial-dots', 'aria-hidden': 'true' },
+        Array.from({ length: total }, (_, index) =>
+          h('span', { class: `tutorial-dot${index === step ? ' is-active' : ''}` }),
+        ),
+      ),
+      h('div', { class: 'tutorial-actions' }, actions),
+    ),
+    h('p', { class: 'fineprint' }, t('tutorial.fineprint')),
   );
 }
 
@@ -1692,9 +1812,9 @@ function renderTurn() {
     h(
       'div',
       { class: 'gf-turn-grid', inert: overlayOpen ? true : null },
-      gfVisiblePanel(player),
       gfFichePanel(player),
       gfMainPanel(player),
+      gfVisiblePanel(player),
       gfBottomBar(player),
     ),
     app.menuOpen ? gfMenuDrawer(player) : null,
@@ -3063,7 +3183,7 @@ function render() {
   if (app.screen === 'pass' && app.game?.phase === PHASES.GAME_OVER) app.screen = 'gameover';
   if (app.screen === 'turn' && app.game?.phase === PHASES.GAME_OVER) app.screen = 'gameover';
   if (app.screen === 'bot' && app.game?.phase === PHASES.GAME_OVER) app.screen = 'gameover';
-  if (!app.game && !['home', 'setup', 'rules'].includes(app.screen)) app.screen = 'home';
+  if (!app.game && !['home', 'setup', 'rules', 'tutorial'].includes(app.screen)) app.screen = 'home';
 
   document.body.classList.toggle(
     'gf-no-scroll',
@@ -3082,6 +3202,7 @@ function render() {
   else if (app.screen === 'gameover') view = renderGameOver();
   else if (app.screen === 'review') view = renderReview();
   else if (app.screen === 'rules') view = renderRules();
+  else if (app.screen === 'tutorial') view = renderTutorial();
   else view = renderHome();
 
   root.append(view);

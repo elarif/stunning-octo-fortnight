@@ -5017,3 +5017,201 @@ body.gf-no-scroll {
     margin-left: auto;
   }
 }
+
+.gf-cell.is-manual {
+  opacity: 1;
+}
+
+.gf-cell.is-manual .gf-cell-num {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+
+.gf-cell.is-manual::after {
+  content: '×';
+  position: absolute;
+  z-index: 2;
+  top: -5px;
+  right: -5px;
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border: 2px solid var(--white);
+  border-radius: 50%;
+  color: var(--danger);
+  background: var(--white);
+  font-size: 1.2rem;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.18);
+}
+
+.screen--tutorial {
+  width: min(760px, 100%);
+  margin: 0 auto;
+}
+
+.tutorial-card {
+  padding: clamp(20px, 4vw, 34px);
+}
+
+.tutorial-card h2 {
+  margin: 0.2rem 0 0.7rem;
+  color: var(--ink);
+  font-size: clamp(1.5rem, 3.2vw, 2.1rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.tutorial-step {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tutorial-text {
+  margin: 0.4rem 0 0;
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.tutorial-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin: 1.1rem 0;
+}
+
+.tutorial-fiche {
+  display: flex;
+  max-width: 430px;
+  flex-direction: column;
+  gap: 6px;
+  margin: 1.1rem auto;
+}
+
+.tutorial-fiche-row {
+  display: grid;
+  grid-template-columns: 8px repeat(5, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.tutorial-fiche-stripe {
+  border-radius: 3px;
+}
+
+.tutorial-fiche-cell {
+  display: grid;
+  min-height: 34px;
+  place-items: center;
+  border-radius: 6px;
+  color: var(--ti);
+  background: var(--tc);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.14);
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.tutorial-hand {
+  display: grid;
+  max-width: 430px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  margin: 1.1rem auto;
+}
+
+.tutorial-hand-tile {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 2px;
+  border-radius: 10px;
+  color: var(--ti);
+  background: var(--tc);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.14), 0 3px 0 rgba(0, 0, 0, 0.16);
+}
+
+.tutorial-ribbon {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.4rem;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tutorial-hand-tile .gf-eyes {
+  margin: 2px 0;
+}
+
+.tutorial-badge {
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: var(--white);
+  background: var(--ink);
+  font-size: 0.7rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.tutorial-gotfive {
+  display: grid;
+  max-width: 360px;
+  min-height: 54px;
+  margin: 1.1rem auto;
+  place-items: center;
+  border-radius: 14px;
+  color: var(--ink);
+  background: var(--accent-2);
+  box-shadow: 0 6px 0 #9d6f12;
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.tutorial-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 1rem 0 0;
+}
+
+.tutorial-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(42, 23, 53, 0.16);
+}
+
+.tutorial-dot.is-active {
+  width: 22px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.tutorial-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 1rem;
+}
+
+.tutorial-actions .btn {
+  flex: 1 1 130px;
+}
+
+.tutorial-actions .btn--ghost {
+  color: var(--ink);
+  border-color: var(--line);
+}
