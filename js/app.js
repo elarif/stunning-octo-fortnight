@@ -1248,7 +1248,7 @@ function gfFicheCell(n, player, visible) {
   const attrs = {
     class: classes.join(' '),
     type: 'button',
-    style: { '--gf-cell-color': data.color.hex },
+    style: { '--gf-cell-color': data.color.hex, '--gf-cell-ink': data.color.ink },
     'aria-label': t('sheet.cellAria', {
       n,
       color: colorName(data.color),
