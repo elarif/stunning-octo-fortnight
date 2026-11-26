@@ -5502,3 +5502,35 @@ body.gf-no-scroll {
 .gf-color-grid--inline .gf-color-card {
   padding: 6px 2px 4px;
 }
+
+.gf-fiche-counts {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.gf-fiche-count {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.gf-fiche-count strong {
+  color: var(--ink);
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.gf-fiche-count--manual strong {
+  color: var(--danger);
+}
+
+.gf-clear-manual:disabled {
+  opacity: 0.45;
+  box-shadow: none;
+  cursor: default;
+}

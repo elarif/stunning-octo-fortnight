@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gotfive-v45';
+const CACHE_NAME = 'gotfive-v46';
 const ASSETS = [
   './',
   './index.html',

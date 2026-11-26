@@ -734,6 +734,17 @@ function toggleFichePage() {
   render();
 }
 
+function clearManualMarks() {
+  const game = app.game;
+  if (!game) return;
+  const player = currentPlayer(game);
+  if (!player || player.manual.length === 0) return;
+  player.manual = [];
+  persist();
+  render();
+  focusSelector('.gf-clear-manual');
+}
+
 function gfToggleManual(n, player) {
   const set = new Set(player.manual);
   if (set.has(n)) set.delete(n);
@@ -1459,7 +1470,9 @@ function gfFichePanel(player) {
   const game = app.game;
   const visible = visibleNumbersFor(game, player.id);
   const focus = getFicheFocus(game, player);
-  const barred = new Set([...visible, ...player.manual]).size;
+  const manualSet = new Set(player.manual);
+  const autoCount = [...visible].filter((n) => !manualSet.has(n)).length;
+  const manualCount = player.manual.length;
   return h(
     'section',
     { class: 'gf-panel gf-fiche-panel' },
@@ -1467,7 +1480,22 @@ function gfFichePanel(player) {
       'div',
       { class: 'gf-panel-head' },
       h('h2', { text: t('gf.fiche') }),
-      h('span', { class: 'gf-fiche-count', text: t('gf.barred', { count: barred }) }),
+      h(
+        'div',
+        { class: 'gf-fiche-counts' },
+        h(
+          'span',
+          { class: 'gf-fiche-count' },
+          h('span', { text: t('gf.auto') }),
+          h('strong', { text: String(autoCount) }),
+        ),
+        h(
+          'span',
+          { class: 'gf-fiche-count gf-fiche-count--manual' },
+          h('span', { text: t('gf.manual') }),
+          h('strong', { text: String(manualCount) }),
+        ),
+      ),
     ),
     h(
       'div',
@@ -1497,6 +1525,16 @@ function gfFichePanel(player) {
         },
         h('span', { class: 'gf-order-icon', 'aria-hidden': 'true', text: '⇅' }),
         t('gf.orderHand'),
+      ),
+      h(
+        'button',
+        {
+          class: 'gf-page-btn gf-clear-manual',
+          type: 'button',
+          disabled: player.manual.length === 0,
+          onclick: clearManualMarks,
+        },
+        t('sheet.clear'),
       ),
       h(
         'div',
