@@ -1331,6 +1331,7 @@ function gfTopBar(player, inert = false) {
 function gfVisiblePanel(player) {
   const game = app.game;
   const selecting = game.phase === PHASES.CHOOSE_TILE;
+  const choosing = [PHASES.CHOOSE_TILE, PHASES.CHOOSE_CLUE, PHASES.COMPARE_SLOT].includes(game.phase);
   const selected = app.selectedTile ?? game.chosenTile;
   return h(
     'section',
@@ -1340,6 +1341,22 @@ function gfVisiblePanel(player) {
       { class: 'gf-panel-head' },
       h('h2', { text: selecting ? t('gf.chooseVisible') : t('gf.visibleTiles') }),
       h('span', { class: 'gf-reserve', text: t('gf.reserve', { n: game.supply.length }) }),
+    ),
+    h(
+      'div',
+      { class: 'gf-visible-help' },
+      h(
+        'span',
+        { class: `gf-visible-help-step${game.phase === PHASES.REVEAL ? ' is-active' : ''}` },
+        h('span', { class: 'gf-visible-help-key', 'aria-hidden': 'true', text: '+' }),
+        h('span', { text: t('gf.addTileHint') }),
+      ),
+      h(
+        'span',
+        { class: `gf-visible-help-step${choosing ? ' is-active' : ''}` },
+        h('span', { class: 'gf-visible-help-key', 'aria-hidden': 'true', text: '›' }),
+        h('span', { text: t('gf.chooseVisibleHint') }),
+      ),
     ),
     h(
       'div',
@@ -1481,6 +1498,7 @@ function gfFichePanel(player) {
         ),
       ),
     ),
+    h('p', { class: 'gf-fiche-hint', text: t('gf.crossHint') }),
   );
 }
 
@@ -1578,7 +1596,6 @@ function gfMainPanel(player) {
     game.phase === PHASES.END ? h('div', { class: 'gf-result' }, renderClueResult()) : null,
     h('div', { class: 'gf-main-claim' }, gfGotFiveButton(player)),
     h('p', { class: 'gf-main-hint', text: t('gf.tapHint') }),
-    h('p', { class: 'gf-main-hint', text: t('gf.crossHint') }),
   );
 }
 
@@ -1887,8 +1904,8 @@ function renderTurn() {
       h(
         'div',
         { class: 'gf-tiles-row' },
-        gfMainPanel(player),
         gfVisiblePanel(player),
+        gfMainPanel(player),
       ),
       gfBottomBar(player),
     ),

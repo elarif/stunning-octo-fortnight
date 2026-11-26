@@ -5386,3 +5386,62 @@ body.gf-no-scroll {
     margin: 0;
   }
 }
+
+.gf-visible-help {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 3px 0 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(42, 23, 53, 0.04);
+}
+
+.gf-visible-help-step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.gf-visible-help-step.is-active {
+  color: var(--ink);
+}
+
+.gf-visible-help-key {
+  display: grid;
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border-radius: 5px;
+  color: var(--ink);
+  background: var(--white);
+  box-shadow: 0 2px 0 #cbb99a;
+  font-size: 0.8rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.gf-visible-help-step.is-active .gf-visible-help-key {
+  background: var(--accent-2);
+  box-shadow: 0 2px 0 #9d6f12;
+}
+
+.gf-fiche-hint {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.7rem;
+  line-height: 1.35;
+  text-align: center;
+}
+
+@media (min-width: 760px) {
+  .gf-tiles-row {
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  }
+}
