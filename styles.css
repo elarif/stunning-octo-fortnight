@@ -5604,17 +5604,20 @@ body.gf-no-scroll {
   outline-offset: 2px;
   animation: gf-guide-ring 1.6s ease-in-out infinite, gf-guide-glow 1.6s ease-in-out infinite,
     gf-guide-shake 2.6s ease-in-out infinite;
+  animation-delay: 0s, 0s, var(--gf-guide-delay, 0s);
+}
+
+.tile.is-guiding.is-highlight {
+  animation: tile-pop 0.55s ease, gf-guide-ring 1.6s ease-in-out infinite,
+    gf-guide-glow 1.6s ease-in-out infinite, gf-guide-shake 2.6s ease-in-out infinite;
+  animation-delay: 0s, 0s, 0s, var(--gf-guide-delay, 0s);
 }
 
 .gf-main-card.is-compare {
   outline-color: rgba(245, 196, 81, 0.15);
   animation: gf-guide-ring 1.6s ease-in-out infinite, gf-guide-glow 1.6s ease-in-out infinite,
     gf-guide-bob 1.6s ease-in-out infinite;
-}
-
-.tile.is-guiding.is-highlight {
-  animation: tile-pop 0.55s ease, gf-guide-ring 1.6s ease-in-out infinite,
-    gf-guide-glow 1.6s ease-in-out infinite, gf-guide-shake 2.6s ease-in-out infinite;
+  animation-delay: 0s, 0s, var(--gf-guide-delay, 0s);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -103,7 +103,7 @@ function dotsEl(count) {
 }
 
 function tileEl(n, options = {}) {
-  const { size = 'md', onclick = null, selected = false, highlight = false, tilt = false, badge = null, disabled = false, guide = false } = options;
+  const { size = 'md', onclick = null, selected = false, highlight = false, tilt = false, badge = null, disabled = false, guide = false, guideDelay = 0 } = options;
   const data = tile(n);
   const classes = ['tile', `tile--${data.color.id}`, `tile--${size}`];
   if (selected) classes.push('is-selected');
@@ -120,7 +120,11 @@ function tileEl(n, options = {}) {
 
   const attrs = {
     class: classes.join(' '),
-    style: { '--tile-bg': data.color.hex, '--tile-ink': data.color.ink },
+    style: {
+      '--tile-bg': data.color.hex,
+      '--tile-ink': data.color.ink,
+      '--gf-guide-delay': `${guideDelay}s`,
+    },
     'aria-label': t('common.tileAria', {
       n: data.n,
       color: colorName(data.color),
@@ -1298,7 +1302,11 @@ function gfMainCard(player, index, options = {}) {
   const attrs = {
     class: classes.join(' '),
     type: 'button',
-    style: { '--gf-card': color.hex, '--gf-card-ink': color.ink },
+    style: {
+      '--gf-card': color.hex,
+      '--gf-card-ink': color.ink,
+      '--gf-guide-delay': `${index * 0.12}s`,
+    },
     'aria-label': label,
   };
   if (options.onClick) attrs.onclick = options.onClick;
@@ -1376,13 +1384,14 @@ function gfVisiblePanel(player) {
     h(
       'div',
       { class: 'gf-visible-row' },
-      game.publicTiles.map((n) =>
+      game.publicTiles.map((n, index) =>
         tileEl(n, {
           size: 'lg',
           onclick: selecting ? () => selectPublicTile(n) : null,
           selected: selected === n,
           highlight: game.lastRevealed === n && game.revealed !== null,
           guide: selecting && app.selectedTile === null,
+          guideDelay: index * 0.14,
         }),
       ),
       game.phase === PHASES.REVEAL
