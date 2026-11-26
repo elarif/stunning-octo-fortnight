@@ -5251,16 +5251,17 @@ body.gf-no-scroll {
 .gf-clue-value,
 .gf-clue-pips {
   display: inline-flex;
-  min-height: 22px;
+  min-height: 24px;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  padding: 0 5px;
-  border-radius: 6px;
+  gap: 4px;
+  padding: 0 4px;
+  border: 1px solid rgba(42, 23, 53, 0.18);
+  border-radius: 7px;
   color: var(--ink);
   background: var(--white);
   box-shadow: 0 2px 0 #cbb99a;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 900;
   line-height: 1;
 }
@@ -5273,7 +5274,7 @@ body.gf-no-scroll {
 
 .gf-clue-pips .dots {
   min-height: 0;
-  gap: 1px;
+  gap: 2px;
 }
 
 .gf-clue-pips .dot {
@@ -5282,14 +5283,40 @@ body.gf-no-scroll {
 }
 
 .gf-clue-sign {
-  color: var(--ok);
-  font-size: 0.9rem;
+  display: inline-grid;
+  min-width: 15px;
+  height: 15px;
+  place-items: center;
+  border-radius: 5px;
+  color: #fffaf2;
+  background: #147a45;
+  font-size: 0.78rem;
   font-weight: 900;
   line-height: 1;
 }
 
 .gf-clue-pips.is-different .gf-clue-sign {
-  color: var(--danger);
+  background: #b52f2f;
+}
+
+@media (min-width: 760px) {
+  .gf-clue-value,
+  .gf-clue-pips {
+    min-height: 26px;
+    gap: 5px;
+    padding: 0 6px;
+  }
+
+  .gf-clue-pips .dot {
+    width: 4px;
+    height: 4px;
+  }
+
+  .gf-clue-sign {
+    min-width: 17px;
+    height: 17px;
+    font-size: 0.85rem;
+  }
 }
 
 @media (min-width: 760px) {
