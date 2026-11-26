@@ -1484,6 +1484,74 @@ function gfFichePanel(player) {
   );
 }
 
+function gfSortingClues(player, current) {
+  return h(
+    'div',
+    { class: 'sorting-zone gf-clue-sort' },
+    player.sorting.map((group, notch) => {
+      const isCurrent = current?.type === 'sort' && current.notch === notch;
+      return h(
+        'div',
+        { class: `notch${isCurrent ? ' is-current' : ''}` },
+        h('span', { class: 'notch-label', text: notchLabel(notch) }),
+        h(
+          'div',
+          { class: 'notch-tiles' },
+          group.length
+            ? group.map((n) =>
+                h(
+                  'span',
+                  {
+                    class: `gf-clue-value${isCurrent && n === current.tile ? ' is-current' : ''}`,
+                    text: String(n),
+                  },
+                ),
+              )
+            : h('span', { class: 'empty', text: '·' }),
+        ),
+      );
+    }),
+  );
+}
+
+function gfComparisonClues(player, current) {
+  return h(
+    'div',
+    { class: 'comparison-row gf-clue-compare' },
+    player.comparisons.map((group, slot) => {
+      const isCurrent = current?.type === 'compare' && current.slot === slot;
+      const targetColor = colorName(tile(player.stand[slot]).color);
+      return h(
+        'div',
+        { class: `compare-slot${isCurrent ? ' is-current' : ''}` },
+        h(
+          'div',
+          { class: 'compare-tiles' },
+          group.length
+            ? group.map((clue) => {
+                const label = t(clue.same ? 'clue.same' : 'clue.different', {
+                  tile: clue.n,
+                  ordinal: ordinal(slot + 1),
+                  color: targetColor,
+                });
+                return h(
+                  'span',
+                  {
+                    class: `gf-clue-pips ${clue.same ? 'is-same' : 'is-different'}${isCurrent && clue.n === current.tile ? ' is-current' : ''}`,
+                    'aria-label': label,
+                    title: label,
+                  },
+                  dotsEl(tile(clue.n).dots),
+                  h('span', { class: 'gf-clue-sign', 'aria-hidden': 'true', text: clue.same ? '=' : '≠' }),
+                );
+              })
+            : h('span', { class: 'empty', text: '·' }),
+        ),
+      );
+    }),
+  );
+}
+
 function gfMainPanel(player) {
   const game = app.game;
   const clue = game.clue;
@@ -1498,7 +1566,7 @@ function gfMainPanel(player) {
       h('h2', { text: t('gf.main') }),
       compare ? h('span', { class: 'gf-main-count', text: t('gf.comparePrompt') }) : null,
     ),
-    h('div', { class: 'gf-sortings' }, renderSortingZone(player, true, clue)),
+    h('div', { class: 'gf-sortings' }, gfSortingClues(player, clue)),
     h(
       'div',
       { class: 'gf-main-row' },
@@ -1506,7 +1574,7 @@ function gfMainPanel(player) {
       player.stand.map((_, index) => gfMainCard(player, index, { compare, editable })),
       h('span', { class: 'gf-order-sign', 'aria-hidden': 'true', text: '+' }),
     ),
-    h('div', { class: 'gf-comparisons' }, renderComparisonRow(player, true, clue, false)),
+    h('div', { class: 'gf-comparisons' }, gfComparisonClues(player, clue)),
     game.phase === PHASES.END ? h('div', { class: 'gf-result' }, renderClueResult()) : null,
     h('p', { class: 'gf-main-hint', text: t('gf.tapHint') }),
     h('p', { class: 'gf-main-hint', text: t('gf.crossHint') }),

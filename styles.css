@@ -5215,3 +5215,143 @@ body.gf-no-scroll {
   color: var(--ink);
   border-color: var(--line);
 }
+
+/* Hand tiles: same footprint as the visible tiles. */
+.gf-main-row {
+  grid-template-columns: 10px repeat(5, 48px) 10px;
+  gap: 5px;
+  justify-content: center;
+}
+
+.gf-main-card,
+.gf-main-card.is-small {
+  width: 48px;
+  height: 62px;
+  padding: 3px 2px;
+  gap: 0;
+}
+
+.gf-main-card .gf-card-ribbon {
+  font-size: 0.4rem;
+  letter-spacing: -0.04em;
+}
+
+.gf-main-card .gf-card-badge {
+  min-width: 28px;
+  height: 16px;
+  gap: 1px;
+  padding: 0 3px;
+  font-size: 0.7rem;
+}
+
+.gf-main-card .gf-eyes {
+  gap: 4px;
+  margin: 1px 0;
+}
+
+.gf-main-card .gf-eye {
+  width: 8px;
+  height: 10px;
+}
+
+.gf-main-card .gf-eye::after {
+  top: 3px;
+  left: 3px;
+  width: 3px;
+  height: 3px;
+}
+
+.gf-claim-cards,
+.gf-clue-cards,
+.gf-draft-cards {
+  justify-items: center;
+}
+
+/* Compact clue chips: values for sorts, pips + coloured sign for comparisons. */
+.gf-clue-value,
+.gf-clue-pips {
+  display: inline-flex;
+  min-height: 22px;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 0 5px;
+  border-radius: 6px;
+  color: var(--ink);
+  background: var(--white);
+  box-shadow: 0 2px 0 #cbb99a;
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.gf-clue-value.is-current,
+.gf-clue-pips.is-current {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 1px;
+}
+
+.gf-clue-pips .dots {
+  min-height: 0;
+  gap: 1px;
+}
+
+.gf-clue-pips .dot {
+  width: 3px;
+  height: 3px;
+}
+
+.gf-clue-sign {
+  color: var(--ok);
+  font-size: 0.9rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.gf-clue-pips.is-different .gf-clue-sign {
+  color: var(--danger);
+}
+
+@media (min-width: 760px) {
+  .gf-main-row {
+    grid-template-columns: 12px repeat(5, 73px) 12px;
+    gap: 6px;
+  }
+
+  .gf-main-card,
+  .gf-main-card.is-small {
+    width: 73px;
+    height: 66px;
+    padding: 3px 2px;
+  }
+
+  .gf-main-card .gf-card-ribbon {
+    font-size: 0.5rem;
+  }
+
+  .gf-main-card .gf-card-badge {
+    min-width: 32px;
+    height: 19px;
+    font-size: 0.82rem;
+  }
+
+  .gf-main-card .gf-eye {
+    width: 9px;
+    height: 11px;
+  }
+
+  .gf-main-card .gf-eye::after {
+    top: 4px;
+    left: 3px;
+    width: 4px;
+    height: 4px;
+  }
+
+  .gf-main-panel .gf-sortings,
+  .gf-main-row,
+  .gf-main-panel .gf-comparisons {
+    max-width: 440px;
+    margin-right: auto;
+    margin-left: auto;
+  }
+}
