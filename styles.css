@@ -5552,20 +5552,69 @@ body.gf-no-scroll {
   }
 }
 
-.gf-add-tile.is-guiding,
+@keyframes gf-guide-bounce {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-4px) scale(1.06);
+  }
+}
+
+@keyframes gf-guide-shake {
+  0%,
+  20%,
+  100% {
+    transform: translateX(0) rotate(0);
+  }
+  4% {
+    transform: translateX(-2px) rotate(-1.5deg);
+  }
+  8% {
+    transform: translateX(2px) rotate(1.5deg);
+  }
+  12% {
+    transform: translateX(-2px) rotate(-1deg);
+  }
+  16% {
+    transform: translateX(2px) rotate(1deg);
+  }
+}
+
+@keyframes gf-guide-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.gf-add-tile.is-guiding {
+  outline: 3px solid rgba(245, 196, 81, 0.15);
+  outline-offset: 2px;
+  animation: gf-guide-ring 1.6s ease-in-out infinite, gf-guide-glow 1.6s ease-in-out infinite,
+    gf-guide-bounce 1.6s ease-in-out infinite;
+}
+
 .tile.is-guiding {
   outline: 3px solid rgba(245, 196, 81, 0.15);
   outline-offset: 2px;
-  animation: gf-guide-ring 1.6s ease-in-out infinite, gf-guide-glow 1.6s ease-in-out infinite;
+  animation: gf-guide-ring 1.6s ease-in-out infinite, gf-guide-glow 1.6s ease-in-out infinite,
+    gf-guide-shake 2.6s ease-in-out infinite;
 }
 
 .gf-main-card.is-compare {
   outline-color: rgba(245, 196, 81, 0.15);
-  animation: gf-guide-ring 1.6s ease-in-out infinite, gf-guide-glow 1.6s ease-in-out infinite;
+  animation: gf-guide-ring 1.6s ease-in-out infinite, gf-guide-glow 1.6s ease-in-out infinite,
+    gf-guide-bob 1.6s ease-in-out infinite;
 }
 
 .tile.is-guiding.is-highlight {
-  animation: tile-pop 0.55s ease, gf-guide-ring 1.6s ease-in-out infinite, gf-guide-glow 1.6s ease-in-out infinite;
+  animation: tile-pop 0.55s ease, gf-guide-ring 1.6s ease-in-out infinite,
+    gf-guide-glow 1.6s ease-in-out infinite, gf-guide-shake 2.6s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
