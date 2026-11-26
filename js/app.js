@@ -545,6 +545,7 @@ function selectPublicTile(n) {
   app.menuOpen = false;
   app.draftError = null;
   render();
+  focusSelector(app.selectedTile === null ? '.gf-visible-row .tile' : '.gf-inline-clue .gf-btn--clue');
 }
 
 function clearSelectedTile() {
@@ -570,7 +571,7 @@ function doChooseClue(type) {
     app.notice = null;
     persist();
     render();
-    focusSelector('.gf-end-turn, .gf-gotfive');
+    focusSelector(type === 'compare' ? '.gf-main-row .gf-main-card' : '.gf-end-turn, .gf-gotfive');
   } catch (error) {
     app.notice = error.message;
     render();
@@ -1416,6 +1417,7 @@ function gfVisiblePanel(player) {
           gfRevealChoices(),
         )
       : null,
+    gfInlineClue(),
   );
 }
 
@@ -1637,7 +1639,14 @@ function gfMainPanel(player) {
       'div',
       { class: 'gf-panel-head' },
       h('h2', { text: t('gf.main') }),
-      compare ? h('span', { class: 'gf-main-count', text: t('gf.comparePrompt') }) : null,
+      compare
+        ? h(
+            'div',
+            { class: 'gf-main-compare' },
+            h('span', { class: 'gf-main-count', text: t('gf.comparePrompt') }),
+            h('button', { class: 'gf-inline-cancel', type: 'button', onclick: doCancelClue }, t('common.change')),
+          )
+        : null,
     ),
     h('div', { class: 'gf-sortings' }, gfSortingClues(player, clue)),
     h(
@@ -1717,61 +1726,41 @@ function gfRevealChoices() {
   );
 }
 
-function gfClueModal(player) {
+function gfInlineClue() {
   const game = app.game;
   const n = app.selectedTile ?? game.chosenTile;
-  if (n === null) return null;
-  if (
-    game.phase !== PHASES.CHOOSE_TILE &&
-    game.phase !== PHASES.CHOOSE_CLUE &&
-    game.phase !== PHASES.COMPARE_SLOT
-  ) {
-    return null;
-  }
-  const compare = game.phase === PHASES.COMPARE_SLOT;
-  const close = () => {
-    if (game.phase === PHASES.CHOOSE_TILE) clearSelectedTile();
-    else doCancelClue();
-  };
-  return gfOverlay(
-    'gf-clue-modal',
-    t('gf.chooseTileTitle', { n }),
-    close,
+  const selecting = game.phase === PHASES.CHOOSE_TILE && app.selectedTile !== null;
+  const choosing = game.phase === PHASES.CHOOSE_CLUE && n !== null;
+  if (!selecting && !choosing) return null;
+  const close = selecting ? clearSelectedTile : doCancelClue;
+  return h(
+    'div',
+    { class: 'gf-inline-reveal gf-inline-clue' },
     h(
       'div',
-      { class: 'gf-clue-head' },
-      tileEl(n, { size: 'md' }),
-      h('p', {
-        class: 'gf-modal-sub',
-        text: compare ? t('gf.comparePrompt') : t('gf.chooseTileHint'),
-      }),
-    ),
-    compare
-      ? null
-      : h(
-          'div',
-          { class: 'gf-clue-actions' },
-          h(
-            'button',
-            { class: 'gf-btn gf-btn--clue', type: 'button', onclick: () => doChooseClue('sort') },
-            t('common.sort'),
-          ),
-          h(
-            'button',
-            { class: 'gf-btn gf-btn--clue', type: 'button', onclick: () => doChooseClue('compare') },
-            t('common.compare'),
-          ),
-        ),
-    h(
-      'div',
-      { class: 'gf-clue-cards' },
-      player.stand.map((_, index) =>
-        gfMainCard(player, index, { compare, small: true }),
+      { class: 'gf-inline-reveal-head' },
+      h('strong', { text: t('gf.chooseTileTitle', { n }) }),
+      h(
+        'button',
+        { class: 'gf-inline-cancel', type: 'button', onclick: close },
+        t('common.change'),
       ),
     ),
-    compare
-      ? h('button', { class: 'gf-link', type: 'button', onclick: doCancelClue }, t('common.change'))
-      : null,
+    h('p', { class: 'gf-inline-hint', text: t('gf.chooseTileHint') }),
+    h(
+      'div',
+      { class: 'gf-clue-actions' },
+      h(
+        'button',
+        { class: 'gf-btn gf-btn--clue', type: 'button', onclick: () => doChooseClue('sort') },
+        t('common.sort'),
+      ),
+      h(
+        'button',
+        { class: 'gf-btn gf-btn--clue', type: 'button', onclick: () => doChooseClue('compare') },
+        t('common.compare'),
+      ),
+    ),
   );
 }
 
@@ -1918,14 +1907,7 @@ function gfHasOverlay() {
   if (app.screen !== 'turn' || !app.game) {
     return app.menuOpen || app.draftSlot !== null;
   }
-  const phase = app.game.phase;
-  return (
-    app.menuOpen ||
-    app.draftSlot !== null ||
-    (phase === PHASES.CHOOSE_TILE && app.selectedTile !== null) ||
-    phase === PHASES.CHOOSE_CLUE ||
-    phase === PHASES.COMPARE_SLOT
-  );
+  return app.menuOpen || app.draftSlot !== null;
 }
 
 function renderTurn() {
@@ -1958,7 +1940,6 @@ function renderTurn() {
       gfBottomBar(player),
     ),
     app.menuOpen ? gfMenuDrawer(player) : null,
-    gfClueModal(player),
     app.draftSlot !== null ? gfDraftModal(player) : null,
   );
 }

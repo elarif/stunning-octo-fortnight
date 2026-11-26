@@ -3307,30 +3307,11 @@ button.tile:hover {
   white-space: nowrap;
 }
 
-.gf-clue-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
-}
-
-.gf-clue-head .tile {
-  width: 46px;
-  height: 58px;
-}
-
 .gf-clue-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 7px;
   margin: 9px 0;
-}
-
-.gf-clue-cards {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 6px;
-  margin-top: 8px;
 }
 
 .gf-draft-cards {
@@ -5262,7 +5243,6 @@ body.gf-no-scroll {
 }
 
 .gf-claim-cards,
-.gf-clue-cards,
 .gf-draft-cards {
   justify-items: center;
 }
@@ -5533,4 +5513,21 @@ body.gf-no-scroll {
   opacity: 0.45;
   box-shadow: none;
   cursor: default;
+}
+
+
+.gf-inline-clue .gf-clue-actions {
+  margin: 6px 0 0;
+}
+
+.gf-main-card.is-compare {
+  outline: 2px dashed var(--gf-yellow);
+  outline-offset: 2px;
+}
+
+.gf-main-compare {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
 }
